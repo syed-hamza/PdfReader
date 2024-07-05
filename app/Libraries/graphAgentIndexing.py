@@ -153,7 +153,7 @@ Format your response as a list of search queries."""
             HumanMessage(content=state['generated_answer']),
             SystemMessage(content=self.websiteActionPrompt)
         ]
-        self.history+="Question: "+state['generated_answer'] + "\n"
+        self.history+="Answer: "+state['generated_answer'] + "\n"
         actions = self.model.invoke(messages)
         self.actions = actions
         return {'actions': str(actions)}
