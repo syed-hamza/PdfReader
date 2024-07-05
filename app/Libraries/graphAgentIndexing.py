@@ -22,10 +22,11 @@ with open(file_path, 'r') as file:
 
 OPENAI_API_TOKEN = data["OpenAI"]
 os.environ["OPENAI_API_KEY"] = OPENAI_API_TOKEN
+
 class AgentState(TypedDict):
     task: str
     research_plan: str
-    retrieved_content: List[str]
+    retrieved_URLs: dict[str, str]
     generated_answer: str
     actions: List[str]
     required_info: List[str]
@@ -47,7 +48,7 @@ class agent():
         self.AnswerGeneratorPrompt = """You are an AI assistant tasked with answering questions and identifying areas where more information is needed. Based on the user's question and any retrieved content, provide an answer and list any topics or questions that require further research.
 
 Your response should be structured as follows:
-1. Answer: Provide a concise answer to the user's question based on available information.
+1. Answer: Provide a concise answer to the user's question based on available information, if the user asks to display any paper put the topic in the requiredinfo.
 2. Required Info: List any topics or questions that need more research to provide a complete answer, The TOPICS should be singular and specific like "Watermelon" and "pokemon". If no further information is needed, return an empty list.
 
 Remember to be informative, accurate, and identify gaps in knowledge when necessary."""
@@ -62,6 +63,7 @@ Format your response as a list of search queries."""
         self.answer = ""
         self.RequestData = False
         self.RAGHandler = RAGHandler()
+        self.history = ""
     
     def getText(self):
         return self.answer
@@ -73,7 +75,7 @@ Format your response as a list of search queries."""
         return self.Actiontools.returnActions()
 
     def getWebsiteActionPrompt(self):
-        prompt = "Here are the functions to call to change the users view, write the string form of python code to call the function appropriately based on what actions are required to satisfy the user based on his question and the answer, make sure its directly executable as i will run the exec function om ti and no error should be there.Only return the code and nothing else. make sure you call multiple actiosn and dont forget to put their relevant arguments."
+        prompt = "Here are the functions to call to change the users view, write the string form of python code to call the function appropriately based on what actions are required to satisfy the user based on his question and the answer, make sure its directly executable as i will run the exec function  and no error should be raised.Only return the code and nothing else. make sure you call multiple actions if needed and dont forget to put their relevant arguments."
         function_list = [
             self.Actiontools.displayPdf,
             self.Actiontools.CreateNewChat,
@@ -114,14 +116,16 @@ Format your response as a list of search queries."""
     def generateAnswers(self, state: AgentState) -> AgentState:
         # First, query the already indexed documents
         rag_response = self.RAGHandler.query(state['task'])
-        
+        urls = state['retrieved_URLs']
         # Combine the RAG response with any previously retrieved content
-        combined_content = f"RAG Response: {rag_response}\n\nPreviously Retrieved Content: {str(state['retrieved_content'])}"
-        
+        combined_content = f"RAG Response: {rag_response}\n"
+
         response = self.model.with_structured_output(Answer).invoke([
             SystemMessage(content=self.AnswerGeneratorPrompt),
             HumanMessage(content=state['task']),
             HumanMessage(content=combined_content),
+            HumanMessage(content="THe following is the history of the conversation:\n"+self.history),
+            
         ])
         
         self.answer = response.answer
@@ -133,31 +137,36 @@ Format your response as a list of search queries."""
         }
 
     def retrieveData(self, state: AgentState) -> AgentState:
+        retreivedURL = {}
         for query in state['required_info']:
-            urls = self.RAGHandler.get_arxiv_pdf_url(query)
-            for url in urls:
+            urls, titles = self.RAGHandler.get_arxiv_pdf_url(query)
+            for n, url in enumerate(urls):
                 self.RAGHandler.index_pdf(url)
-        
+                retreivedURL[titles[n]] = url
         # We're not querying here anymore, just indexing new documents
-        return {'retrieved_content': []}
+        return {'retrieved_URLs': retreivedURL}
 
     def websiteActions(self, state: AgentState) -> AgentState:
         messages = [
             HumanMessage(content=state['task']),
+            HumanMessage(content=f"Retrieved PDF URLs: {json.dumps(state['retrieved_URLs'], indent=2)}"),
             HumanMessage(content=state['generated_answer']),
             SystemMessage(content=self.websiteActionPrompt)
         ]
+        self.history+="Question: "+state['generated_answer'] + "\n"
         actions = self.model.invoke(messages)
         self.actions = actions
         return {'actions': str(actions)}
 
     def __call__(self, prompt: str):
         self.prompt = prompt
+        print(prompt,self.history)
+        self.history+="Question: "+prompt + "\n"
         thread = {"configurable": {"thread_id": "1"}}
         initial_state: AgentState = {
             'task': prompt,
             'research_plan': '',
-            'retrieved_content': [],
+            'retrieved_URLs': {},
             'generated_answer': '',
             'actions': [],
             'required_info': [],
@@ -168,5 +177,9 @@ Format your response as a list of search queries."""
         self.actions = self.actions.content.replace("python","")
         self.actions = self.actions.replace("```","")
         print(self.actions)
-        exec(self.actions)
+        try:
+            exec(self.actions)
+        except Exception as e:
+            print(f"Error executing actions: {e}")
+            # You might want to add some fallback behavior here
         return self.getActions()

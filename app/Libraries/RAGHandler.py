@@ -82,7 +82,9 @@ class RAGHandler:
 
         # Get the first result
         results = []
+        titles = []
         for result in search.results():
             results.append(result.pdf_url)
-            
-        return results
+            titles.append(result.title)
+        print("results:",results)
+        return results,titles
