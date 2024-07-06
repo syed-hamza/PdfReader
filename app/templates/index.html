@@ -34,8 +34,11 @@
             </div>
         </div>
     </div>
-    <div class="w-2/5 bg-gray-50 p-4 column">
-        <embed id="pdfPlaceholder" src="your-pdf-file.pdf" type="application/pdf" width="100%" height="100%">
+    <div class="w-2/5 bg-gray-50 p-4 column" id="pdfContainer">
+        <embed id="pdfPlaceholder" src="" type="application/pdf" width="100%" height="100%">
+        <div id="pdfFallback" class="hidden text-center text-gray-500 text-2xl font-bold flex items-center justify-center">
+            PDF Holder
+        </div>
     </div>
     <script src="./static/scripts/tools.js"></script>
     <script src="./static/scripts/main.js"></script>

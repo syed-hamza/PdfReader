@@ -144,4 +144,7 @@ const toggleRecording = () => {
     }
 };
 
-document.addEventListener('DOMContentLoaded', loadConversations);
+document.addEventListener('DOMContentLoaded', () => {
+    loadConversations();
+    displayPDF(''); // This will show the fallback text initially
+});

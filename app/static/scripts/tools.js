@@ -16,9 +16,19 @@ const parseActions= (actions) =>{
 }
 
 
-const displayPDF = (url)=>{
-    pdfEmbed = document.getElementById('pdfPlaceholder')
-    pdfEmbed.setAttribute('src', url);
+const displayPDF = (url) => {
+    const pdfEmbed = document.getElementById('pdfPlaceholder');
+    const pdfFallback = document.getElementById('pdfFallback');
+
+    if (url && url.trim() !== '') {
+        pdfEmbed.setAttribute('src', url);
+        pdfEmbed.classList.remove('hidden');
+        pdfFallback.classList.add('hidden');
+    } else {
+        pdfEmbed.setAttribute('src', '');
+        pdfEmbed.classList.add('hidden');
+        pdfFallback.classList.remove('hidden');
+    }
 }
 
 const addmessage = (userMessage,reply) => {

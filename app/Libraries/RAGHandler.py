@@ -76,15 +76,17 @@ class RAGHandler:
     def get_arxiv_pdf_url(self,query):
         search = arxiv.Search(
             query = query,
-            max_results = 5,
+            max_results = 1,
             sort_by = arxiv.SortCriterion.Relevance
         )
 
         # Get the first result
         results = []
         titles = []
+        summaries = []
         for result in search.results():
             results.append(result.pdf_url)
             titles.append(result.title)
+            summaries.append(result.summary)
         print("results:",results)
-        return results,titles
+        return results,titles,summaries

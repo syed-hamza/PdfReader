@@ -15,13 +15,16 @@ import json
 from Libraries.RAGHandler import RAGHandler
 
 file_path = './static/secretKey.json'
+try:
+    # Read the JSON file
+    with open(file_path, 'r') as file:
+        data = json.load(file)
 
-# Read the JSON file
-with open(file_path, 'r') as file:
-    data = json.load(file)
-
-OPENAI_API_TOKEN = data["OpenAI"]
-os.environ["OPENAI_API_KEY"] = OPENAI_API_TOKEN
+    OPENAI_API_TOKEN = data["OpenAI"]
+    os.environ["OPENAI_API_KEY"] = OPENAI_API_TOKEN
+except:
+    OPENAI_API_TOKEN = "YOUR_OPENAI_KEY"
+    os.environ["OPENAI_API_KEY"] = OPENAI_API_TOKEN
 
 class AgentState(TypedDict):
     task: str
@@ -31,6 +34,7 @@ class AgentState(TypedDict):
     actions: List[str]
     required_info: List[str]
     iteration_count: int
+    retreivedSummary: List[str]
 
 class Queries(BaseModel):
     queries: List[str]
@@ -49,7 +53,7 @@ class agent():
 
 Your response should be structured as follows:
 1. Answer: Provide a concise answer to the user's question based on available information, if the user asks to display any paper put the topic in the requiredinfo.
-2. Required Info: List any topics or questions that need more research to provide a complete answer, The TOPICS should be singular and specific like "Watermelon" and "pokemon". If no further information is needed, return an empty list.
+2. Required Info: List any topics or questions that need more research to provide a complete answer. If no further information is needed, return an empty list. If a person requests any research paper(like display or show) this list should include the title of the paper
 
 Remember to be informative, accurate, and identify gaps in knowledge when necessary."""
 
@@ -116,15 +120,16 @@ Format your response as a list of search queries."""
     def generateAnswers(self, state: AgentState) -> AgentState:
         # First, query the already indexed documents
         rag_response = self.RAGHandler.query(state['task'])
+        data = state['retreivedSummary']
         urls = state['retrieved_URLs']
         # Combine the RAG response with any previously retrieved content
-        combined_content = f"RAG Response: {rag_response}\n"
+        combined_content = f"RAG Response: {rag_response}\n summaries of research Papers with relevant titles: {json.dumps(data, indent=2)}\n"
 
         response = self.model.with_structured_output(Answer).invoke([
             SystemMessage(content=self.AnswerGeneratorPrompt),
             HumanMessage(content=state['task']),
             HumanMessage(content=combined_content),
-            HumanMessage(content="THe following is the history of the conversation:\n"+self.history),
+            HumanMessage(content="The following is the history of the conversation:\n"+self.history),
             
         ])
         
@@ -138,18 +143,20 @@ Format your response as a list of search queries."""
 
     def retrieveData(self, state: AgentState) -> AgentState:
         retreivedURL = {}
+        retreivedSummary = {}
         for query in state['required_info']:
-            urls, titles = self.RAGHandler.get_arxiv_pdf_url(query)
+            urls, titles,summaries = self.RAGHandler.get_arxiv_pdf_url(query)
             for n, url in enumerate(urls):
                 self.RAGHandler.index_pdf(url)
-                retreivedURL[titles[n]] = url
+                retreivedURL[titles[n]] = url                
+                retreivedSummary[titles[n]] = summaries[n]
         # We're not querying here anymore, just indexing new documents
-        return {'retrieved_URLs': retreivedURL}
+        return {'retrieved_URLs': retreivedURL,'retreivedSummary': retreivedSummary}
 
     def websiteActions(self, state: AgentState) -> AgentState:
         messages = [
             HumanMessage(content=state['task']),
-            HumanMessage(content=f"Retrieved PDF URLs: {json.dumps(state['retrieved_URLs'], indent=2)}"),
+            HumanMessage(content=f"Retrieved PDF URLs: {json.dumps(state['retrieved_URLs'], indent=2)}."),
             HumanMessage(content=state['generated_answer']),
             SystemMessage(content=self.websiteActionPrompt)
         ]
@@ -170,6 +177,7 @@ Format your response as a list of search queries."""
             'generated_answer': '',
             'actions': [],
             'required_info': [],
+            'retreivedSummary':[],
             'iteration_count': 0
         }
         for s in self.graph.stream(initial_state, thread):
