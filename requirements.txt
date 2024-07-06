@@ -1,0 +1,11 @@
+flask==3.0.3
+werkzeug==3.0.3
+langchain-openai==0.1.8
+langchain-core==0.2.7
+langgraph==0.0.69
+pydantic==2.7.1
+arxiv==2.1.0
+openai==1.30.3
+requests==2.31.0
+PyPDF2==3.0.1
+faiss-cpu==1.8.0.post1
