@@ -3,11 +3,10 @@ let mediaRecorder;
 let audioChunks = [];
 
 const chatHistory = document.getElementById('chat-history');
-const messages = document.getElementById('messages');
-const messageInput = document.getElementById('message-input');
 const audioIcon = document.getElementById('audio-icon');
 
 const loadConversations = () => {
+    const chatHistory = document.getElementById('chat-history');
     fetch('/conversations')
         .then(response => response.json())
         .then(data => {
@@ -30,6 +29,7 @@ const loadConversations = () => {
 };
 
 const loadConversation = (conversationId) => {
+    const messages = document.getElementById('messages');
     fetch('/conversations')
         .then(response => response.json())
         .then(data => {
@@ -48,6 +48,7 @@ const loadConversation = (conversationId) => {
 };
 
 const sendMessage = () => {
+    const messageInput = document.getElementById('message-input');
     const message = messageInput.value;
     if (message.trim() && currentConversationId !== null) {
         fetch('/chat', {
@@ -68,6 +69,7 @@ const sendMessage = () => {
 };
 
 const newChat = () => {
+    const messages = document.getElementById('messages');
     fetch('/new_chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }

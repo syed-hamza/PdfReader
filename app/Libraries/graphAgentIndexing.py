@@ -1,18 +1,19 @@
-from langchain_openai import ChatOpenAI
+
 from typing import TypedDict, Annotated, List
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage
 from langchain_community.tools.tavily_search import TavilySearchResults
 import operator
 from Libraries.langchainWebTools import agentTools
-from langchain.agents import load_tools
+from langchain_community.agent_toolkits.load_tools import load_tools
 import inspect
 from langchain_core.pydantic_v1 import BaseModel
 import os
 import arxiv
 import json
 
-from Libraries.RAGHandler import RAGHandler
+# from Libraries.RAGHandler import RAGHandler
+from Libraries.QdrantRAGHandler import RAGHandler
 
 file_path = './static/secretKey.json'
 try:
@@ -35,6 +36,7 @@ class AgentState(TypedDict):
     required_info: List[str]
     iteration_count: int
     retreivedSummary: List[str]
+    retrieved_images: List[str]
 
 class Queries(BaseModel):
     queries: List[str]
@@ -47,15 +49,15 @@ class Actions(BaseModel):
     actions: List[str]
 
 class agent():
-    def __init__(self, model, Searchtools):
+    def __init__(self, model, Searchtools,client):
         self.Actiontools = agentTools(self)
-        self.AnswerGeneratorPrompt = """You are an AI assistant tasked with answering questions and identifying areas where more information is needed. Based on the user's question and any retrieved content, provide an answer and list any topics or questions that require further research.
+        self.AnswerGeneratorPrompt = """You are a senior Librarian tasked with answering questions and identifying areas where more information is needed. Based on the user's question and any retrieved content, provide an answer and list any topics or questions that require further research, Use only the context provided, not your own knowledge. Make sure you list topics if the context doesnt show relevant information.
 
 Your response should be structured as follows:
-1. Answer: Provide a concise answer to the user's question based on available information, if the user asks to display any paper put the topic in the requiredinfo.
-2. Required Info: List any topics or questions that need more research to provide a complete answer. If no further information is needed, return an empty list. If a person requests any research paper(like display or show) this list should include the title of the paper
+1. Answer: Provide a concise answer to the user's question based on available information, if the user asks to display any paper put the topic in the requiredinfo. Put one or 2 images along with your answer in html format (For example:<img src="/static/images/test.jpeg"/> from the image paths you are given(make sure you dont put the entire path) for the final answer only(where you leave the required info empty).make sure you use the context for relevant information and not make your own.
+2. Required Info: List any topics or questions that need more research to provide a complete answer.Return an empty list if and only if the context you recieved was irrelevant or you didnt recieve any context at all. If a person requests any research paper(like display or show) this list should include the title of the paper
 
-Remember to be informative, accurate, and identify gaps in knowledge when necessary."""
+Remember to be informative, accurate, and identify gaps in knowledge when necessary. If you dont have the information, just put in the required info please."""
 
         self.RetreiverPrompt = """Given the research plan or required information, generate specific queries to search for on ArXiv. These queries should be focused and relevant to the topics that need more information.
 
@@ -66,7 +68,7 @@ Format your response as a list of search queries."""
         self.generateGraph()
         self.answer = ""
         self.RequestData = False
-        self.RAGHandler = RAGHandler()
+        self.RAGHandler = RAGHandler(client = client)
         self.history = ""
     
     def getText(self):
@@ -115,30 +117,30 @@ Format your response as a list of search queries."""
         self.graph = graph.compile()
 
     def should_retrieve_data(self, state: AgentState) -> bool:
-        return self.RequestData and state['iteration_count'] < 2 and len(state['required_info']) > 0
+        return self.RequestData and state['iteration_count'] < 2 
 
     def generateAnswers(self, state: AgentState) -> AgentState:
-        # First, query the already indexed documents
-        rag_response = self.RAGHandler.query(state['task'])
-        data = state['retreivedSummary']
-        urls = state['retrieved_URLs']
-        # Combine the RAG response with any previously retrieved content
-        combined_content = f"RAG Response: {rag_response}\n summaries of research Papers with relevant titles: {json.dumps(data, indent=2)}\n"
+        # Query the already indexed documents
+        retrieved_text, self.retrieved_images = self.RAGHandler.query(state['task'])
+        # Combine the retrieved text with any previously retrieved content
+        combined_content = f"context: {retrieved_text}\n"
 
         response = self.model.with_structured_output(Answer).invoke([
             SystemMessage(content=self.AnswerGeneratorPrompt),
             HumanMessage(content=state['task']),
             HumanMessage(content=combined_content),
-            HumanMessage(content="The following is the history of the conversation:\n"+self.history),
-            
+            HumanMessage(content="here are the relevant images in order"+str(self.retrieved_images)),
+            # HumanMessage(content="The following is the history of the conversation:\n"+self.history),
         ])
         
         self.answer = response.answer
         self.RequestData = len(response.required_info) > 0
+        print("Requested data:",self.RequestData,response.required_info)
         return {
             'generated_answer': response.answer,
             'required_info': response.required_info,
-            'iteration_count': state['iteration_count'] + 1
+            'iteration_count': state['iteration_count'] + 1,
+            'retrieved_images': self.retrieved_images
         }
 
     def retrieveData(self, state: AgentState) -> AgentState:
@@ -158,16 +160,17 @@ Format your response as a list of search queries."""
             HumanMessage(content=state['task']),
             HumanMessage(content=f"Retrieved PDF URLs: {json.dumps(state['retrieved_URLs'], indent=2)}."),
             HumanMessage(content=state['generated_answer']),
+            HumanMessage(content=f"Retrieved images: {json.dumps(state['retrieved_images'], indent=2)}"),
             SystemMessage(content=self.websiteActionPrompt)
         ]
-        self.history+="Answer: "+state['generated_answer'] + "\n"
+        self.history += "Answer: " + state['generated_answer'] + "\n"
         actions = self.model.invoke(messages)
         self.actions = actions
+        print("Returning Actions:",self.actions)
         return {'actions': str(actions)}
 
     def __call__(self, prompt: str):
         self.prompt = prompt
-        print(prompt,self.history)
         self.history+="Question: "+prompt + "\n"
         thread = {"configurable": {"thread_id": "1"}}
         initial_state: AgentState = {
@@ -178,16 +181,15 @@ Format your response as a list of search queries."""
             'actions': [],
             'required_info': [],
             'retreivedSummary':[],
+            'retrieved_images':[],
             'iteration_count': 0
         }
         for s in self.graph.stream(initial_state, thread):
             pass
         self.actions = self.actions.content.replace("python","")
         self.actions = self.actions.replace("```","")
-        print(self.actions)
         try:
             exec(self.actions)
         except Exception as e:
             print(f"Error executing actions: {e}")
-            # You might want to add some fallback behavior here
         return self.getActions()

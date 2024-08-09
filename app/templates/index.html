@@ -1,16 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Application</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-    <style>
-        .column { height: calc(100vh - 2rem); overflow-y: auto; }
-        .fixed-bottom { position: fixed; bottom: 0; width: 40%; background-color: white; }
-        .audio-btn { background: none; border: none; cursor: pointer; }
-    </style>
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Chat Application</title>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/12.2.0/markdown-it.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/default.min.css">
+        <script src="./static/scripts/tools.js"></script>
+        <script src="./static/scripts/main.js"></script>
+        <style>
+            .column { height: calc(100vh - 2rem); overflow-y: auto; }
+            .fixed-bottom { position: fixed; bottom: 0; width: 40%; background-color: white; } /* Added padding-bottom */
+            .audio-btn { background: none; border: none; cursor: pointer; }
+            .message img {
+                max-width: 100%;
+                height: auto;
+                margin: 10px 0;
+            }
+            pre {
+                background-color: #f4f4f4;
+                padding: 10px;
+                border-radius: 5px;
+                overflow-x: auto;
+            }
+            code {
+                font-family: 'Courier New', Courier, monospace;
+            }
+            .hljs {
+                background: transparent;
+            }
+            #messages {
+                margin-bottom: 6rem; /* Adjusted margin-bottom */
+            }
+        </style>
+    </head>
 <body class="flex">
     <div class="w-1/5 bg-gray-200 p-4 column">
         <h2 class="text-lg font-semibold mb-4">Chat History</h2>
@@ -40,7 +65,5 @@
             PDF Holder
         </div>
     </div>
-    <script src="./static/scripts/tools.js"></script>
-    <script src="./static/scripts/main.js"></script>
 </body>
 </html>

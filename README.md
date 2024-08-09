@@ -2,6 +2,12 @@
 
 ArxivQnA is a tool designed to help you search for and retrieve research papers from Arxiv using natural language queries. The tool leverages the OpenAI API to process your queries and fetch relevant papers. Please note that this tool is still under development, and you may experience errors or slow responses. Slow responses could also be due to the Arxiv API taking its time to process requests.
 
+## TODO
+
+- Prompt template
+- conversational buffer(lllm for software)
+- better retreival research
+
 ## Features
 
 - Query research papers from Arxiv using natural language.
