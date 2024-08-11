@@ -146,7 +146,90 @@ const toggleRecording = () => {
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+// Function to fetch elements from the server
+function fetchElements() {
+    fetch('/get-elements')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('element-select');
+            select.innerHTML = '';
+            data.forEach(element => {
+                const option = document.createElement('option');
+                option.value = element;
+                option.textContent = element;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error fetching elements:', error));
+}
+
+
+// PDF upload functionality
+function setupPDFUpload() {
+    const dropZone = document.getElementById('pdf-upload');
+    const fileInput = document.getElementById('pdf-input');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.backgroundColor = '#f0f0f0';
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.style.backgroundColor = '';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.backgroundColor = '';
+        const file = e.dataTransfer.files[0];
+        if (file && file.type === 'application/pdf') {
+            uploadPDF(file);
+        } else {
+            alert('Please upload a PDF file.');
+        }
+    });
+
+    fileInput.addEventListener('change', () => {
+        const file = fileInput.files[0];
+        if (file && file.type === 'application/pdf') {
+            uploadPDF(file);
+        } else {
+            alert('Please upload a PDF file.');
+        }
+    });
+}
+
+function uploadPDF(file) {
+    const formData = new FormData();
+    formData.append('pdf', file);
+
+    fetch('/upload-pdf', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('PDF uploaded successfully!');
+            fetchElements();
+        } else {
+            alert('Failed to upload PDF.');
+        }
+    })
+    .catch(error => console.error('Error uploading PDF:', error));
+}
+
+function init() {
     loadConversations();
-    displayPDF(''); // This will show the fallback text initially
-});
+    fetchElements();
+    setupPDFUpload();
+    const pdfSelect = document.getElementById('element-select');
+    pdfSelect.addEventListener('change', function() {
+        if (this.value) {
+            loadPDF(this.value);
+        }
+    });
+}
+document.addEventListener('DOMContentLoaded', init);

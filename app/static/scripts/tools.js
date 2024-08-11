@@ -30,22 +30,6 @@ const parseActions = (data) => {
 //     });
 // }
 
-
-const displayPDF = (url) => {
-    const pdfEmbed = document.getElementById('pdfPlaceholder');
-    const pdfFallback = document.getElementById('pdfFallback');
-
-    if (url && url.trim() !== '') {
-        pdfEmbed.setAttribute('src', url);
-        pdfEmbed.classList.remove('hidden');
-        pdfFallback.classList.add('hidden');
-    } else {
-        pdfEmbed.setAttribute('src', '');
-        pdfEmbed.classList.add('hidden');
-        pdfFallback.classList.remove('hidden');
-    }
-}
-
 const addmessage = (userMessage, reply) => {
     const userMsgDiv = document.createElement('div');
     userMsgDiv.textContent = userMessage;
@@ -103,3 +87,14 @@ const addmessage = (userMessage, reply) => {
     }
 };
 
+function loadPDF(pdfName) {
+    console.log("loading: ", pdfName);
+    fetch(`/get-pdf?filename=${pdfName}`)
+        .then(response => response.blob())
+        .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const viewer = document.getElementById('pdfPlaceholder');
+            viewer.src = url;
+        })
+        .catch(error => console.error('Error:', error));
+}

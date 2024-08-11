@@ -1,0 +1,46 @@
+.column { 
+    height: calc(100vh - 2rem); 
+    overflow-y: auto; 
+}
+.fixed-bottom { 
+    position: fixed; 
+    bottom: 0; 
+    width: 40%; 
+    background-color: white; 
+}
+.audio-btn { 
+    background: none; 
+    border: none; 
+    cursor: pointer; 
+}
+.message img {
+    max-width: 100%;
+    height: auto;
+    margin: 10px 0;
+}
+pre {
+    background-color: #f4f4f4;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+}
+code {
+    font-family: 'Courier New', Courier, monospace;
+}
+.hljs {
+    background: transparent;
+}
+#messages {
+    margin-bottom: 6rem;
+}
+#chat-history {
+    height: 50%;
+    overflow-y: auto;
+}
+#pdf-upload {
+    border: 2px dashed #ccc;
+    border-radius: 5px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+}

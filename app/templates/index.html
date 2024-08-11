@@ -1,47 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Chat Application</title>
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/12.2.0/markdown-it.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/default.min.css">
-        <script src="./static/scripts/tools.js"></script>
-        <script src="./static/scripts/main.js"></script>
-        <style>
-            .column { height: calc(100vh - 2rem); overflow-y: auto; }
-            .fixed-bottom { position: fixed; bottom: 0; width: 40%; background-color: white; } /* Added padding-bottom */
-            .audio-btn { background: none; border: none; cursor: pointer; }
-            .message img {
-                max-width: 100%;
-                height: auto;
-                margin: 10px 0;
-            }
-            pre {
-                background-color: #f4f4f4;
-                padding: 10px;
-                border-radius: 5px;
-                overflow-x: auto;
-            }
-            code {
-                font-family: 'Courier New', Courier, monospace;
-            }
-            .hljs {
-                background: transparent;
-            }
-            #messages {
-                margin-bottom: 6rem; /* Adjusted margin-bottom */
-            }
-        </style>
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Application</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/markdown-it/12.2.0/markdown-it.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/default.min.css">
+    <link rel="stylesheet" href="./static/styles/main.css">
+</head>
 <body class="flex">
-    <div class="w-1/5 bg-gray-200 p-4 column">
-        <h2 class="text-lg font-semibold mb-4">Chat History</h2>
-        <div id="chat-history"></div>
-        <button class="mt-4 bg-blue-500 text-white px-4 py-2 rounded" onclick="newChat()">New Chat</button>
-        <button class="mt-2 bg-red-500 text-white px-4 py-2 rounded" onclick="deleteChat()">Delete Chat</button>
+    <div class="w-1/5 bg-gray-200 p-4 column flex flex-col">
+        <div class="h-1/2 overflow-y-auto">
+            <h2 class="text-lg font-semibold mb-4">Chat History</h2>
+            <div id="chat-history"></div>
+            <button class="mt-4 bg-blue-500 text-white px-4 py-2 rounded" onclick="newChat()">New Chat</button>
+            <button class="mt-2 bg-red-500 text-white px-4 py-2 rounded" onclick="deleteChat()">Delete Chat</button>
+        </div>
+        <div class="h-1/2 mt-4">
+            <h2 class="text-lg font-semibold mb-4">Select Element</h2>
+            <select id="element-select" class="w-full p-2 border rounded">
+                <option value="">Loading...</option>
+            </select>
+            <div id="pdf-upload" class="mt-4">
+                <p>Drag and drop PDF here or click to upload</p>
+                <input type="file" id="pdf-input" accept=".pdf" style="display: none;">
+            </div>
+        </div>
     </div>
     <div class="w-2/5 bg-white p-4 column border-l border-r flex flex-col">
         <div id="messages" class="flex flex-col space-y-4 flex-grow overflow-y-auto">
@@ -65,5 +51,7 @@
             PDF Holder
         </div>
     </div>
+    <script src="./static/scripts/tools.js"></script>
+    <script src="./static/scripts/main.js"></script>
 </body>
 </html>

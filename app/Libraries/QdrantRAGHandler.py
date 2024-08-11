@@ -16,12 +16,12 @@ import fitz  # PyMuPDF
 from PIL import Image
 import os
 from llama_index.core.schema import ImageNode
+from pathlib import Path
 
 
 class RAGHandler:
     def __init__(self,client):
-        print("_"*10 + "creating qdrant"+"_"*10)
-        self.output_dir = "./static/images/"
+        self.output_dir = "./static/Retrievedimages/"
         self.pdfDir = './papers/'
         self.index_dir = "qdrant_index"
         self.embeddings = OpenAIEmbeddings()
@@ -41,8 +41,7 @@ class RAGHandler:
 
     def download_pdf(self, url):
         print(f"Downloading PDF from {url}")
-        
-        # Send a GET request with stream=True to handle large files
+    
         response = requests.get(url, stream=True)
         response.raise_for_status()  # Raise an exception for bad status codes
         
@@ -51,16 +50,12 @@ class RAGHandler:
         if content_disposition:
             filename = content_disposition.split('filename=')[1].strip('"')
         else:
-            # If Content-Disposition is not available, use the URL's filename
             filename = unquote(os.path.basename(url))
         
-        # Ensure the filename ends with .pdf
         if not filename.lower().endswith('.pdf'):
             filename += '.pdf'
         
         path = os.path.join(self.pdfDir, filename)
-        
-        # Save the PDF file in chunks
         with open(path, 'wb') as f:
             for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
@@ -70,35 +65,25 @@ class RAGHandler:
         
         return path
 
-
-    def extract_images(self, pdf_path, output_dir):
-        name = os.path.basename(pdf_path)
-        # Create output directory if it doesn't exist
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        doc = fitz.open(pdf_path)
-        for page_num in range(len(doc)):
-            page = doc[page_num]
-            image_list = page.get_images(full=True)
-            
-            for img_index, img in enumerate(image_list):
-                xref = img[0]
-                base_image = doc.extract_image(xref)
-                image_bytes = base_image["image"]
-                
-                # Get image extension
-                ext = base_image["ext"]
-                
-                # Save image
-                image = Image.open(io.BytesIO(image_bytes))
-                image.save(os.path.join(output_dir, f'{name}_image_page{page_num + 1}_{img_index + 1}.{ext}'))
+    def pdf_to_images(self,pdf_path):
+        pdf_document = fitz.open(pdf_path)
+        pdf_name = Path(pdf_path).stem
+        path = os.path.join(self.output_dir,pdf_name)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        for page_num in range(pdf_document.page_count):
+            page = pdf_document.load_page(page_num)
+            pix = page.get_pixmap()
+            output_image_path = os.path.join(path,f"{page_num + 1}.png")
+            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            img.save(output_image_path)
 
 
     # Index a new PDF
     def index_pdf(self, arxiv_url = None):
         if(arxiv_url != None):
             path = self.download_pdf(arxiv_url)
-            self.extract_images(path,self.output_dir)
+            self.pdf_to_images(path)
         try:
             documents1 = SimpleDirectoryReader(self.pdfDir).load_data()
             documents2 = SimpleDirectoryReader(self.output_dir).load_data()
@@ -106,9 +91,10 @@ class RAGHandler:
             self.index = MultiModalVectorStoreIndex.from_documents(
                 documents,
                 storage_context=self.storage_context,
-            )
+                )
         except:
-            self.index = None
+            print("input dir empty")
+            pass
 
     def query(self, question):
         if self.index ==None:
@@ -123,12 +109,12 @@ class RAGHandler:
             else:
                 retrieved_text += res_node.get_content()
         
-        return retrieved_text, retrieved_images
+        return retrieved_text#, retrieved_images
     
     def get_arxiv_pdf_url(self,query):
         search = arxiv.Search(
             query = query,
-            max_results = 3,
+            max_results = 1,
             sort_by = arxiv.SortCriterion.Relevance
         )
 
@@ -142,3 +128,7 @@ class RAGHandler:
             summaries.append(result.summary)
         print("results:",results)
         return results,titles,summaries
+
+    def postProcess(self,filePath):
+        self.pdf_to_images(filePath)
+        self.index_pdf()

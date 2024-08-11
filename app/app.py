@@ -1,11 +1,11 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 from werkzeug.utils import secure_filename
-from Libraries.chathandler import chathandler
+from Libraries.chathandler import chatHandlerClass
 import os
 from flask import send_file
 
 app = Flask(__name__)
-chatHandler = chathandler()
+chatHandler = chatHandlerClass()
 
 @app.route('/')
 def index():
@@ -49,6 +49,40 @@ def upload_audio():
         conversation_id = int(request.args.get('convId'))
         return chatHandler.upload_audio(file,conversation_id)
     return jsonify({'error': 'File upload failed'}), 400
+
+@app.route('/get-elements')
+def get_elements():
+    elements = chatHandler.getPdf()
+    return jsonify(elements)
+
+@app.route('/upload-pdf', methods=['POST'])
+def upload_pdf():
+    if 'pdf' not in request.files:
+        return jsonify({'success': False, 'message': 'No file part'})
+    
+    file = request.files['pdf']
+    
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'No selected file'})
+    if file and file.filename.endswith('.pdf'):
+        chatHandler.uploadPDF(file)
+        return jsonify({'success': True, 'message': 'File uploaded successfully'})
+    
+    return jsonify({'success': False, 'message': 'Invalid file type'})
+
+@app.route('/get-pdf')
+def getPdf():
+    pdf_path = request.args.get('filename')
+    return chatHandler.sendPDF(pdf_path)
+
+@app.route('/toggleArxiv')
+def ToggleArxiv():
+    current = chatHandler.toggleArxiv()
+    return f'archive requests set to {current}'
+
+@app.route('/Arxivallowed')
+def checkArxiv():
+    return chatHandler.isArxivAllowed()
 
 if __name__ == '__main__':
     app.run(debug=True,use_reloader=False)

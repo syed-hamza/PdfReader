@@ -1,12 +1,12 @@
 #all required tools
 
-import requests
 
 class agentTools:
     def __init__(self,agent):
         self.actions = []
         self.agent = agent
         self.answer = ""
+
 
     def getAnswer(self):
         answer = self.answer

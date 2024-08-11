@@ -8,15 +8,17 @@ from Libraries.fileHandler import handler
 from flask import jsonify
 import base64
 import re
+from Libraries.QdrantRAGHandler import RAGHandler
 
-class chathandler:
-    def __init__(self,modelName = "gpt-4o",tools =["arxiv"]):
-        model = ChatOpenAI(model =modelName)
+class chatHandlerClass:
+    def __init__(self,modelName = "gpt-4o-mini",tools =["arxiv"]):
+        model = ChatOpenAI(model=modelName)
         self.tools = tools
         self.client = qdrant_client.QdrantClient(path="qdrant_d_app")
-        self.chatAgent = agent(model, tools,self.client)
+        self.RAG = RAGHandler(client = self.client)
+        self.chatAgent = agent(model, tools,self.RAG)
         self.transcriber = whisperTranscriber()
-        self.fileHandler = handler()
+        self.fileHandler = handler(self.RAG)
         pass
 
     def load_conversations(self,username = None):
@@ -102,3 +104,18 @@ class chathandler:
                 self.fileHandler.save_conversations(conversations)
                 return jsonify(response_actions)
         return jsonify({'error': 'Conversation not found'}), 404
+    
+    def getPdf(self):
+        return self.fileHandler.GetPdfNames()
+    
+    def uploadPDF(self,file):    
+        filepath = self.fileHandler.savePdf(file)
+
+    def sendPDF(self,filePath):
+        return self.fileHandler.sendPDF(filePath)
+    
+    def toggleArxiv(self):
+        return self.chatAgent.toggleArxiv()
+
+    def isArxivAllowed(self):
+        return self.chatAgent.isArxivAllowed()

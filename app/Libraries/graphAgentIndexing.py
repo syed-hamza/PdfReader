@@ -13,7 +13,6 @@ import arxiv
 import json
 
 # from Libraries.RAGHandler import RAGHandler
-from Libraries.QdrantRAGHandler import RAGHandler
 
 file_path = './static/secretKey.json'
 try:
@@ -36,7 +35,6 @@ class AgentState(TypedDict):
     required_info: List[str]
     iteration_count: int
     retreivedSummary: List[str]
-    retrieved_images: List[str]
 
 class Queries(BaseModel):
     queries: List[str]
@@ -49,13 +47,13 @@ class Actions(BaseModel):
     actions: List[str]
 
 class agent():
-    def __init__(self, model, Searchtools,client):
+    def __init__(self, model, Searchtools,RAGHandler,AllowRequests=True):
         self.Actiontools = agentTools(self)
         self.AnswerGeneratorPrompt = """You are a senior Librarian tasked with answering questions and identifying areas where more information is needed. Based on the user's question and any retrieved content, provide an answer and list any topics or questions that require further research, Use only the context provided, not your own knowledge. Make sure you list topics if the context doesnt show relevant information.
 
 Your response should be structured as follows:
-1. Answer: Provide a concise answer to the user's question based on available information, if the user asks to display any paper put the topic in the requiredinfo. Put one or 2 images along with your answer in html format (For example:<img src="/static/images/test.jpeg"/> from the image paths you are given(make sure you dont put the entire path) for the final answer only(where you leave the required info empty).make sure you use the context for relevant information and not make your own.
-2. Required Info: List any topics or questions that need more research to provide a complete answer.Return an empty list if and only if the context you recieved was irrelevant or you didnt recieve any context at all. If a person requests any research paper(like display or show) this list should include the title of the paper
+1. Answer: Provide a concise answer to the user's question based on available information, if the user asks to display any paper put the topic in the requiredinfo.make sure you use the context for relevant information and not make your own.
+2. Required Info: If a person requests any research paper(like display or show) this list should include the title of the paper.
 
 Remember to be informative, accurate, and identify gaps in knowledge when necessary. If you dont have the information, just put in the required info please."""
 
@@ -68,8 +66,19 @@ Format your response as a list of search queries."""
         self.generateGraph()
         self.answer = ""
         self.RequestData = False
-        self.RAGHandler = RAGHandler(client = client)
+        self.AllowRequests = AllowRequests
+        self.RAGHandler = RAGHandler
         self.history = ""
+
+    def toggleArxiv(self):
+        if(self.AllowRequests):
+            self.AllowRequests = False
+        else:
+            self.AllowRequests = True
+        return self.AllowRequests
+    
+    def isArxivAllowed(self):
+        return self.AllowRequests
     
     def getText(self):
         return self.answer
@@ -117,19 +126,19 @@ Format your response as a list of search queries."""
         self.graph = graph.compile()
 
     def should_retrieve_data(self, state: AgentState) -> bool:
-        return self.RequestData and state['iteration_count'] < 2 
+        return self.AllowRequests and self.RequestData and state['iteration_count'] < 2 
 
     def generateAnswers(self, state: AgentState) -> AgentState:
         # Query the already indexed documents
-        retrieved_text, self.retrieved_images = self.RAGHandler.query(state['task'])
+        print(state['task'])
+        retrieved_text= self.RAGHandler.query(state['task'])
         # Combine the retrieved text with any previously retrieved content
         combined_content = f"context: {retrieved_text}\n"
-
+        print(" "*30,combined_content)
         response = self.model.with_structured_output(Answer).invoke([
             SystemMessage(content=self.AnswerGeneratorPrompt),
             HumanMessage(content=state['task']),
             HumanMessage(content=combined_content),
-            HumanMessage(content="here are the relevant images in order"+str(self.retrieved_images)),
             # HumanMessage(content="The following is the history of the conversation:\n"+self.history),
         ])
         
@@ -139,8 +148,7 @@ Format your response as a list of search queries."""
         return {
             'generated_answer': response.answer,
             'required_info': response.required_info,
-            'iteration_count': state['iteration_count'] + 1,
-            'retrieved_images': self.retrieved_images
+            'iteration_count': state['iteration_count'] + 1
         }
 
     def retrieveData(self, state: AgentState) -> AgentState:
@@ -160,7 +168,6 @@ Format your response as a list of search queries."""
             HumanMessage(content=state['task']),
             HumanMessage(content=f"Retrieved PDF URLs: {json.dumps(state['retrieved_URLs'], indent=2)}."),
             HumanMessage(content=state['generated_answer']),
-            HumanMessage(content=f"Retrieved images: {json.dumps(state['retrieved_images'], indent=2)}"),
             SystemMessage(content=self.websiteActionPrompt)
         ]
         self.history += "Answer: " + state['generated_answer'] + "\n"
@@ -181,7 +188,6 @@ Format your response as a list of search queries."""
             'actions': [],
             'required_info': [],
             'retreivedSummary':[],
-            'retrieved_images':[],
             'iteration_count': 0
         }
         for s in self.graph.stream(initial_state, thread):
