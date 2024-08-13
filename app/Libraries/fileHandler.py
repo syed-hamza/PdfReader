@@ -4,7 +4,9 @@ from werkzeug.utils import secure_filename
 from flask import send_file
 import shutil
 from pathlib import Path
+from pydub import AudioSegment
 import base64
+import json
 
 class handler:
     def __init__(self,RAG):
@@ -14,9 +16,43 @@ class handler:
         self.pdfPath = 'papers/'
         self.outputImgdir = "./static/Retrievedimages/"
         self.audioPath = "./static/Audio/"
-        self.confirmDir([self.pdfPath,self.audioPath,self.UploadFolder])
+        self.logPath = "./logs/"
+        self.tempPath = "./temp/"
+        self.videoPath = './static/results/'
+        self.SeperateImgDir = "./static/Retrievedimages/"
+        self.confirmDir([self.pdfPath,self.audioPath,self.UploadFolder,self.logPath,self.tempPath,self.videoPath,self.SeperateImgDir])
+        
+    def updateJSON(self,name,title,data):
+        if(name[:-4]==".pdf"):
+            name = Path(name).stem
+        filePath = os.path.join(self.logPath,name+".json")
+        with open(filePath, 'w+') as file:
+            try:
+                filedata = json.load(file)
+                filedata[title] = data
+                json.dump(fileData, file, indent=4) 
+            except:
+                fileData = {title:data}
+                json.dump(fileData, file, indent=4) 
+            
         
         
+    def loadJSON(self,name,title):
+        filePath = os.path.join(self.logPath,name+".json")
+        if(not os.path.exists(filePath)):
+            print("log file not found")
+            return
+        else:
+            with open(filePath, 'r') as file:
+                filedata = json.load(file)
+                return filedata[title]
+            
+    def videoFileExists(self,fileName):
+        fileName = os.path.join(self.videoPath,self.fileName[:-4]+".mp4")
+        if(os.path.exists(fileName)):
+            return True
+        return False
+
     def confirmDir(self,paths):
         for path in paths:
             if not os.path.exists(path):
@@ -93,3 +129,26 @@ class handler:
         path = os.path.join(self.audioPath,name)
         audio.save(path+".mp3")
         return path
+    
+    def MergeAndSaveAudioAndDuration(self,files,name,durations):
+        combined = AudioSegment.from_mp3(files[0])
+        for mp3_file in files[1:]:
+            audio_segment = AudioSegment.from_mp3(mp3_file)
+            combined += audio_segment
+
+        combined.export(name+".mp3", format='mp3')
+        self.updateJSON(name,"duration",durations)
+        return name+".mp3"
+    
+    def getDurations(self,name):
+        if(name[-4:]==".pdf"):
+            name = Path(name).stem
+        data = self.loadJSON(name,"duration")
+        if(not isinstance(data,str)):
+            return data
+        return eval(data)
+    
+    def pagePath(self,pdfname,pageNum):
+        if(pageNum[-4:]==".pdf"):
+            pageNum = Path(pageNum).stem
+        return os.path.join(self.SeperateImgDir,pdfname,pageNum+".png")

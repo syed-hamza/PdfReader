@@ -245,8 +245,11 @@ function init() {
     fetchElements();
     setupPDFUpload();
     const pdfSelect = document.getElementById('element-select');
+    localStorage.setItem("pdf",pdfSelect.value)
+    console.log(localStorage.getItem("pdf"))
     pdfSelect.addEventListener('change', function() {
         if (this.value) {
+            localStorage.setItem("pdf",this.value)
             loadPDF(this.value);
         }
     });

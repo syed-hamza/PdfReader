@@ -12,7 +12,7 @@ import requests
 from Libraries.transcriber import whisperTranscriber
 from Libraries.graphAgentIndexing import agent
 from Libraries.fileHandler import handler
-from Libraries.SadTalker.videoGenerator import videoGen
+from Libraries.videoGenerator import videoGen
 from Libraries.QdrantRAGHandler import RAGHandler
 from Libraries.audioGenerator import gttsconverter
 
@@ -136,6 +136,9 @@ class chatHandlerClass:
     def sendPDF(self,filePath):
         return self.fileHandler.sendPDF(filePath)
     
+    def videoFileExists(self,fileName):
+        return self.fileHandler.videoFileExists(fileName)
+
     def toggleArxiv(self):
         return self.chatAgent.toggleArxiv()
 
@@ -170,3 +173,11 @@ class chatHandlerClass:
         print("generating openai video")
         video_path = self.videoGenerator.generate_video(driven_audio = audioPath)
         return video_path
+    
+    def retrieveRelevantPdfImage(self,pdfname,timestamp):
+        durations = self.fileHandler.getDurations(pdfname)
+        pageNum = 0
+        for i in range(len(durations)):
+            if(durations[i]>=timestamp):
+                pageNum = i
+        return self.fileHandler.pagePath(pdfname,pageNum)

@@ -77,6 +77,11 @@ def getPdf():
     pdf_path = request.args.get('filename')
     return chatHandler.sendPDF(pdf_path)
 
+@app.route('/isVideoGenerated')
+def isVideoGenerated():
+    pdf_path = request.args.get('filename')
+    return chatHandler.videoFileExists(pdf_path) #returns True or False
+
 
 @app.route('/genVideo')
 def genVideo():
@@ -92,6 +97,23 @@ def ToggleArxiv():
 @app.route('/Arxivallowed')
 def checkArxiv():
     return chatHandler.isArxivAllowed()
+
+@app.route('/get_video_path', methods=['GET'])
+def get_video_path():
+    
+    pdfName =  request.args.get('pdfName')[:-4]
+    video_path = f'/static/results/{pdfName}.mp4'
+    print(os.path.exists(video_path))
+    return jsonify({'video_url': video_path})
+
+@app.route('/update_timestamp', methods=['POST'])
+def update_timestamp():
+    data = request.get_json()
+    print(data)
+    timestamp = data['timestamp']
+    pdfname = data['pdfName']
+    image = chatHandler.retrieveRelevantPdfImage(pdfname,timestamp) #return image
+    return image
 
 if __name__ == '__main__':
     app.run(debug=True,use_reloader=False)
