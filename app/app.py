@@ -1,12 +1,14 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for
-from werkzeug.utils import secure_filename
-from Libraries.chathandler import chatHandlerClass
+from flask import Flask, request, jsonify, render_template 
+import sys 
 import os
-from flask import send_file
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'Libraries/SadTalker')))
+
+from Libraries.chathandler import chatHandlerClass
+
 
 app = Flask(__name__)
 chatHandler = chatHandlerClass()
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -74,6 +76,13 @@ def upload_pdf():
 def getPdf():
     pdf_path = request.args.get('filename')
     return chatHandler.sendPDF(pdf_path)
+
+
+@app.route('/genVideo')
+def genVideo():
+    pdf_path = request.args.get('filename')
+    vidPath = chatHandler.summarizePDF(pdf_path)
+    return vidPath
 
 @app.route('/toggleArxiv')
 def ToggleArxiv():

@@ -159,6 +159,9 @@ function fetchElements() {
                 option.textContent = element;
                 select.appendChild(option);
             });
+            if(data.length>0){
+                loadPDF(data[0])
+            }
         })
         .catch(error => console.error('Error fetching elements:', error));
 }
@@ -219,6 +222,22 @@ function uploadPDF(file) {
         }
     })
     .catch(error => console.error('Error uploading PDF:', error));
+}
+
+function summarize(){
+    const pdfSelect = document.getElementById('element-select');
+    const pdfname = pdfSelect.value
+    if(pdfname== null){
+        console.log("no element selected")
+        return;
+    }
+    fetch(`/genVideo?filename=${pdfname}`)
+        .then(response => response.text())
+        .then(
+            console.log(response)
+        )
+        .catch(error => console.error('Error:', error));
+    
 }
 
 function init() {

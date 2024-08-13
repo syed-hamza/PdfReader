@@ -1,5 +1,5 @@
 
-from typing import TypedDict, Annotated, List
+from typing import TypedDict, List
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage
 from langchain_community.tools.tavily_search import TavilySearchResults
@@ -14,17 +14,6 @@ import json
 
 # from Libraries.RAGHandler import RAGHandler
 
-file_path = './static/secretKey.json'
-try:
-    # Read the JSON file
-    with open(file_path, 'r') as file:
-        data = json.load(file)
-
-    OPENAI_API_TOKEN = data["OpenAI"]
-    os.environ["OPENAI_API_KEY"] = OPENAI_API_TOKEN
-except:
-    OPENAI_API_TOKEN = "YOUR_OPENAI_KEY"
-    os.environ["OPENAI_API_KEY"] = OPENAI_API_TOKEN
 
 class AgentState(TypedDict):
     task: str

@@ -2,13 +2,32 @@ import os
 import json
 from langchain_openai import ChatOpenAI
 import qdrant_client
-from Libraries.transcriber import whisperTranscriber
-from Libraries.graphAgentIndexing import agent
-from Libraries.fileHandler import handler
 from flask import jsonify
 import base64
 import re
+import openai
+import requests
+
+
+from Libraries.transcriber import whisperTranscriber
+from Libraries.graphAgentIndexing import agent
+from Libraries.fileHandler import handler
+from Libraries.SadTalker.videoGenerator import videoGen
 from Libraries.QdrantRAGHandler import RAGHandler
+from Libraries.audioGenerator import gttsconverter
+
+
+file_path = './static/secretKey.json'
+try:
+    # Read the JSON file
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+
+    OPENAI_API_TOKEN = data["OpenAI"]
+    os.environ["OPENAI_API_KEY"] = OPENAI_API_TOKEN
+except:
+    OPENAI_API_TOKEN = "YOUR_OPENAI_KEY"
+    os.environ["OPENAI_API_KEY"] = OPENAI_API_TOKEN
 
 class chatHandlerClass:
     def __init__(self,modelName = "gpt-4o-mini",tools =["arxiv"]):
@@ -19,6 +38,9 @@ class chatHandlerClass:
         self.chatAgent = agent(model, tools,self.RAG)
         self.transcriber = whisperTranscriber()
         self.fileHandler = handler(self.RAG)
+        self.videoGenerator = videoGen()
+        self.model = "gpt-4o-mini"
+        self.audioGenerator = gttsconverter(self.fileHandler)
         pass
 
     def load_conversations(self,username = None):
@@ -119,3 +141,32 @@ class chatHandlerClass:
 
     def isArxivAllowed(self):
         return self.chatAgent.isArxivAllowed()
+    
+    def summarizePDF(self,pdf_path):
+        print("generating content")
+        content,pdf_name = self.fileHandler.retreivePDFContent(pdf_path)
+
+        headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"
+        }
+
+        payload = {
+        "model": self.model,
+        "messages": [
+            {
+            "role": "user",
+            "content": content,
+            }
+        ],
+        }
+        print("generating openai response")
+
+        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+        lecture = response.json()['choices'][0]['message']['content']
+        print("generating openai audio")
+        audioPath = self.audioGenerator.textToAudio(lecture,pdf_name)
+        audioPath = "./static/Audio/1706.03762v7.mp3"
+        print("generating openai video")
+        video_path = self.videoGenerator.generate_video(driven_audio = audioPath)
+        return video_path

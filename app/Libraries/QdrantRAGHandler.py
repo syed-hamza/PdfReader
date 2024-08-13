@@ -85,9 +85,7 @@ class RAGHandler:
             path = self.download_pdf(arxiv_url)
             self.pdf_to_images(path)
         try:
-            documents1 = SimpleDirectoryReader(self.pdfDir).load_data()
-            documents2 = SimpleDirectoryReader(self.output_dir).load_data()
-            documents = documents1 + documents2
+            documents = SimpleDirectoryReader(self.pdfDir).load_data()
             self.index = MultiModalVectorStoreIndex.from_documents(
                 documents,
                 storage_context=self.storage_context,
@@ -95,6 +93,14 @@ class RAGHandler:
         except:
             print("input dir empty")
             pass
+
+    def indexSoloPdf(self, pdfPath):
+        documents = SimpleDirectoryReader(pdfPath).load_data()
+        PDFindex = MultiModalVectorStoreIndex.from_documents(
+            documents,
+            storage_context=self.storage_context,
+            )
+        return PDFindex
 
     def query(self, question):
         if self.index ==None:
