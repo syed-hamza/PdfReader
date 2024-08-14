@@ -1,4 +1,10 @@
 
+function NonePdf(){
+    if(localStorage.getItem("pdf")==None){
+        console.log("pdf is none")
+        
+    }
+}
 function loadImage(path) {
     // Set the image source dynamically
     document.getElementById('imagePlaceholder').src = path;

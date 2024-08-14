@@ -40,7 +40,7 @@ class chatHandlerClass:
         self.fileHandler = handler(self.RAG)
         self.videoGenerator = videoGen()
         self.model = "gpt-4o-mini"
-        self.audioGenerator = gttsconverter(self.fileHandler)
+        self.audioGenerator = gttsconverter(self.fileHandler,speed=1.25)
         pass
 
     def load_conversations(self,username = None):
@@ -167,11 +167,10 @@ class chatHandlerClass:
 
         response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
         lecture = response.json()['choices'][0]['message']['content']
-        print("generating openai audio")
+        print("generating audio")
         audioPath = self.audioGenerator.textToAudio(lecture,pdf_name)
-        audioPath = "./static/Audio/1706.03762v7.mp3"
-        print("generating openai video")
-        video_path = self.videoGenerator.generate_video(driven_audio = audioPath)
+        print("generating video")
+        video_path = self.videoGenerator.generate_video(driven_audio = audioPath,pdfName=pdf_name)
         return video_path
     
     def retrieveRelevantPdfImage(self,pdfname,timestamp):
@@ -180,4 +179,5 @@ class chatHandlerClass:
         for i in range(len(durations)):
             if(durations[i]>=timestamp):
                 pageNum = i
-        return self.fileHandler.pagePath(pdfname,pageNum)
+                break
+        return self.fileHandler.pagePath(pdfname,pageNum+1)

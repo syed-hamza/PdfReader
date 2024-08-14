@@ -40,8 +40,8 @@ class handler:
     def loadJSON(self,name,title):
         filePath = os.path.join(self.logPath,name+".json")
         if(not os.path.exists(filePath)):
-            print("log file not found")
-            return
+            print("log file not found for :",filePath)
+            return []
         else:
             with open(filePath, 'r') as file:
                 filedata = json.load(file)
@@ -109,7 +109,7 @@ class handler:
         content = [
         {
           "type": "text",
-          "text": "you have every page of a given research paper, return the summary pagewise seperated by a line in the form of a lecture, dont start with page1,2 etc, try to finish the entire lecture within 1-2 minutes. dont add any special characters. return a plain string."
+          "text": "you have every page of a given research paper, return the summary pagewise seperated by a line in the form of a lecture, dont start with page1,2 etc, try to finish the entire lecture within 3-5 minutes and dont forget to explain relevant tables and images. dont add any special characters. return a plain string."
         },
       ]
         images = os.listdir(imageDir)
@@ -137,7 +137,12 @@ class handler:
             combined += audio_segment
 
         combined.export(name+".mp3", format='mp3')
-        self.updateJSON(name,"duration",durations)
+        sm = 0
+        cumdur = []
+        for i in durations:
+            sm += i
+            cumdur.append(sm)
+        self.updateJSON(name,"duration",cumdur)
         return name+".mp3"
     
     def getDurations(self,name):
@@ -149,6 +154,6 @@ class handler:
         return eval(data)
     
     def pagePath(self,pdfname,pageNum):
-        if(pageNum[-4:]==".pdf"):
-            pageNum = Path(pageNum).stem
-        return os.path.join(self.SeperateImgDir,pdfname,pageNum+".png")
+        if(pdfname[-4:]==".pdf"):
+            pdfname = Path(pdfname).stem
+        return os.path.join(self.SeperateImgDir,pdfname,str(pageNum)+".png")

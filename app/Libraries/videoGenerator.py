@@ -19,7 +19,8 @@ class videoGen():
 
     def generate_video(self,
         driven_audio='./Libraries/SadTalker/examples/driven_audio/bus_chinese.wav',
-        source_image='./Libraries/SadTalker/examples/source_image/art_0.png',
+        source_image='./Libraries/SadTalker/examples/source_image/teacher.jpeg',
+        pdfName = '',
         ref_eyeblink=None,
         ref_pose=None,
         checkpoint_dir='./Libraries/SadTalker/checkpoints',
@@ -136,9 +137,9 @@ class videoGen():
         
         result = animate_from_coeff.generate(data, save_dir, source_image, crop_info, 
                                             enhancer=enhancer, background_enhancer=background_enhancer, preprocess=preprocess, img_size=size)
-        
-        shutil.move(result, save_dir+'.mp4')
-        print('The generated video is named:', save_dir+'.mp4')
+        finalPath = os.path.join(result_dir,pdfName+".mp4")
+        shutil.move(result,finalPath)
+        print('The generated video is named:', finalPath)
 
         if not verbose:
             shutil.rmtree(save_dir)

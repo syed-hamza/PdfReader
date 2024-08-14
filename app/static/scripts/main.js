@@ -160,6 +160,7 @@ function fetchElements() {
                 select.appendChild(option);
             });
             if(data.length>0){
+                localStorage.setItem("pdf",data[0])
                 loadPDF(data[0])
             }
         })
@@ -234,12 +235,14 @@ function summarize(){
     fetch(`/genVideo?filename=${pdfname}`)
         .then(response => response.text())
         .then(
-            console.log(response)
+            response => console.log(response)
         )
         .catch(error => console.error('Error:', error));
     
 }
-
+function displayVid(){
+    window.location.href = "/video";
+}
 function init() {
     loadConversations();
     fetchElements();

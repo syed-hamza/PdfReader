@@ -13,6 +13,10 @@ chatHandler = chatHandlerClass()
 def index():
     return render_template('index.html')
 
+@app.route('/video')
+def video():
+    return render_template('video.html')
+
 @app.route('/test')
 def test():
     return render_template('test.html')
@@ -109,7 +113,6 @@ def get_video_path():
 @app.route('/update_timestamp', methods=['POST'])
 def update_timestamp():
     data = request.get_json()
-    print(data)
     timestamp = data['timestamp']
     pdfname = data['pdfName']
     image = chatHandler.retrieveRelevantPdfImage(pdfname,timestamp) #return image

@@ -17,17 +17,18 @@
             <div id="chat-history"></div>
             <button class="mt-4 bg-blue-500 text-white px-4 py-2 rounded" onclick="newChat()">New Chat</button>
             <button class="mt-2 bg-red-500 text-white px-4 py-2 rounded" onclick="deleteChat()">Delete Chat</button>
-            <button class="mt-2 bg-blue-500 text-white px-4 py-2 rounded" onclick="summarize()">Summarize</button>
         </div>
         <div class="h-1/2 mt-4">
             <h2 class="text-lg font-semibold mb-4">Select Element</h2>
             <select id="element-select" class="w-full p-2 border rounded">
-                <option value="">Loading...</option>
+                <option value="">Loading...</timestampoption>
             </select>
             <div id="pdf-upload" class="mt-4">
                 <p>Drag and drop PDF here or click to upload</p>
                 <input type="file" id="pdf-input" accept=".pdf" style="display: none;">
             </div>
+            <button class="mt-2 bg-blue-500 text-white px-4 py-2 rounded" onclick="summarize()">Generate Lecture</button>
+            <button class="mt-2 bg-blue-500 text-white px-4 py-2 rounded" onclick="displayVid()">display Lecture</button>
         </div>
     </div>
     <div class="w-2/5 bg-white p-4 column border-l border-r flex flex-col">
