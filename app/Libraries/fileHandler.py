@@ -109,7 +109,7 @@ class handler:
         content = [
         {
           "type": "text",
-          "text": "you have every page of a given research paper, return the summary pagewise seperated by a line in the form of a lecture, dont start with page1,2 etc, try to finish the entire lecture within 1-2 minutes and dont forget to explain relevant tables and images. dont add any special characters. return a plain string."
+          "text": """Provide the summary of the entire research paper, add introduction, conclusion , citations etc."""
         },
       ]
         images = os.listdir(imageDir)
@@ -157,3 +157,11 @@ class handler:
         if(pdfname[-4:]==".pdf"):
             pdfname = Path(pdfname).stem
         return os.path.join(self.SeperateImgDir,pdfname,str(pageNum)+".png")
+    
+    def getSubtitles(self,pdfname):
+        return self.loadJSON(pdfname,"lecture")
+    
+    def getAudio(self,pdfname):
+        if(pdfname[-4:]==".pdf"):
+            pdfname = Path(pdfname).stem
+        return send_file(os.path.join(self.audioPath,pdfname+"mp3"))

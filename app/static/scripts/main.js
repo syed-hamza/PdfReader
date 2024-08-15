@@ -225,28 +225,59 @@ function uploadPDF(file) {
     .catch(error => console.error('Error uploading PDF:', error));
 }
 
-function summarize(){
+async function summarize(){
     const pdfSelect = document.getElementById('element-select');
     const pdfname = pdfSelect.value
     if(pdfname== null){
         console.log("no element selected")
         return;
     }
-    fetch(`/genVideo?filename=${pdfname}`)
+    await fetch(`/getSummary?filename=${pdfname}`)
         .then(response => response.text())
         .then(
-            response => console.log(response)
+            response => addmessage('',response)
         )
         .catch(error => console.error('Error:', error));
+    LoadAudio()
     
 }
 function displayVid(){
     window.location.href = "/video";
 }
+
+function LoadAudio() {
+    const audioSource = document.getElementById('audioSource');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const audioContainer = document.getElementById('audioContainer');
+    audioSource.src = `/get_audio?pdfName=${localStorage.getItem("pdf")}`;
+    audioPlayer.load();
+    audioContainer.style.display = 'block';
+}
+
+function audioTimer() {
+    let audioPlayer = document.getElementById("audioPlayer");
+
+    audioPlayer.addEventListener("timeupdate", function() {
+        let currentTime = audioPlayer.currentTime;
+
+        if (audioPlayer.paused || audioPlayer.ended) return;
+
+        // Send the current timestamp to the server every 0.5 seconds
+        console.log("sending pdf", localStorage.getItem("pdf"));
+        fetch('/update_timestamp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ timestamp: currentTime, pdfName: localStorage.getItem("pdf") })
+        });
+    });
+}
 function init() {
     loadConversations();
     fetchElements();
     setupPDFUpload();
+    audioTimer();
     const pdfSelect = document.getElementById('element-select');
     localStorage.setItem("pdf",pdfSelect.value)
     console.log(localStorage.getItem("pdf"))
@@ -257,4 +288,5 @@ function init() {
         }
     });
 }
+
 document.addEventListener('DOMContentLoaded', init);

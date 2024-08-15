@@ -87,11 +87,18 @@ def isVideoGenerated():
     return chatHandler.videoFileExists(pdf_path) #returns True or False
 
 
-@app.route('/genVideo')
+@app.route('/getSummary')
 def genVideo():
     pdf_path = request.args.get('filename')
-    vidPath = chatHandler.summarizePDF(pdf_path)
-    return vidPath
+    summary = chatHandler.summarizePDF(pdf_path)
+    return summary
+
+
+
+@app.route('/getSubtitles')
+def getSubtitles():
+    pdf_path = request.args.get('pdfName')
+    return chatHandler.getSubtitles(pdf_path)
 
 @app.route('/toggleArxiv')
 def ToggleArxiv():
@@ -117,6 +124,11 @@ def update_timestamp():
     pdfname = data['pdfName']
     image = chatHandler.retrieveRelevantPdfImage(pdfname,timestamp) #return image
     return image
+
+@app.route('/get_audio')
+def serve_audio():
+    pdfName =  request.args.get('pdfName')
+    return chatHandler.getAudio(pdfName)
 
 if __name__ == '__main__':
     app.run(debug=True,use_reloader=False, host="0.0.0.0")

@@ -30,11 +30,13 @@ const parseActions = (data) => {
 //     });
 // }
 
-const addmessage = (userMessage, reply) => {
-    const userMsgDiv = document.createElement('div');
-    userMsgDiv.textContent = userMessage;
-    userMsgDiv.className = 'p-2 bg-green-100 rounded self-end';
-    messages.appendChild(userMsgDiv);
+const addmessage = (userMessage, reply, audioPath = null) => {
+    if(userMessage !== ''){
+        const userMsgDiv = document.createElement('div');
+        userMsgDiv.textContent = userMessage;
+        userMsgDiv.className = 'p-2 bg-green-100 rounded self-end';
+        messages.appendChild(userMsgDiv);
+    }
 
     const responseMsgDiv = document.createElement('div');
     responseMsgDiv.className = 'p-2 bg-gray-100 rounded self-start';

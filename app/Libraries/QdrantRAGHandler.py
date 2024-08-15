@@ -37,7 +37,6 @@ class RAGHandler:
             vector_store=text_store, image_store=image_store
         )
         self.index_pdf()
-        self.index =None
 
 
     def download_pdf(self, url):

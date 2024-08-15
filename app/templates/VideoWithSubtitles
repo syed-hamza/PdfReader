@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Player</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="w-3/4 bg-white shadow-lg rounded-lg p-6">
+        <h1 class="text-2xl font-bold mb-4 text-center">Video and Image Viewer</h1>
+        <textarea id ="subtitlesPlaceholder"></textarea>
+        <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4 max-h-[80vh]">
+            <video id="videoPlayer" class="w-full sm:w-1/2  bg-gray-200 rounded" controls>
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+    <script src="./static/scripts/video.js"></script>
+</body>
+</html>

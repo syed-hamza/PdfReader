@@ -12,9 +12,10 @@ import requests
 from Libraries.transcriber import whisperTranscriber
 from Libraries.graphAgentIndexing import agent
 from Libraries.fileHandler import handler
-from Libraries.videoGenerator import videoGen
+# from Libraries.videoGenerator import videoGen
 from Libraries.QdrantRAGHandler import RAGHandler
 from Libraries.audioGenerator import gttsconverter
+from Libraries.VideoGen import videoGenMethod
 
 
 file_path = './static/secretKey.json'
@@ -38,7 +39,7 @@ class chatHandlerClass:
         self.chatAgent = agent(model, tools,self.RAG)
         self.transcriber = whisperTranscriber()
         self.fileHandler = handler(self.RAG)
-        self.videoGenerator = videoGen()
+        self.videoGenerator = videoGenMethod()
         self.model = "gpt-4o-mini"
         self.audioGenerator = gttsconverter(self.fileHandler,speed=1.25)
         pass
@@ -167,11 +168,11 @@ class chatHandlerClass:
 
         response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
         lecture = response.json()['choices'][0]['message']['content']
+        self.fileHandler.updateJSON(pdf_name,"lecture",lecture)
         print("generating audio")
+        print("lecture",lecture)
         audioPath = self.audioGenerator.textToAudio(lecture,pdf_name)
-        print("generating video")
-        video_path = self.videoGenerator.generate_video(driven_audio = audioPath,pdfName=pdf_name)
-        return video_path
+        return str(lecture)
     
     def retrieveRelevantPdfImage(self,pdfname,timestamp):
         durations = self.fileHandler.getDurations(pdfname)
@@ -181,3 +182,6 @@ class chatHandlerClass:
                 pageNum = i
                 break
         return self.fileHandler.pagePath(pdfname,pageNum+1)
+    
+    def getAudio(self,pdfname):
+        return self.fileHandler.getAudio(pdfname)

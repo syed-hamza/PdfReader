@@ -13,8 +13,10 @@ class gttsconverter():
     def textToAudio(self, text, name):
         durations = []
         files = []
-        individualPages = [i for n, i in enumerate(text.split("\n")) if n % 2 == 0]
+        individualPages = [i for n, i in enumerate(text.split("\n"))]
         for n, text in enumerate(individualPages):
+            if(text==""):
+                continue
             myobj = gTTS(text=text, lang="en", slow=False)
             filename = f"./temp/test_{n}.mp3"
             myobj.save(filename)
