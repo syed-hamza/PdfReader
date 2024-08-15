@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, render_template
 import sys 
 import os
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'Libraries/SadTalker')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'Libraries/VideoGen')))
 
 from Libraries.chathandler import chatHandlerClass
 

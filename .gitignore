@@ -2,3 +2,13 @@ secretKey.json
 testing.ipynb
 qdrantTest.ipynb
 example_PDF
+app/gfpgan/*
+app/logs/*
+app/results/*
+app/temp/*
+app/static/results/*
+app/static/Retrievedimages/*
+app/static/Audio/*
+testEnv/*
+app/Libraries/VideoGen/gfpgan/*
+app/Libraries/VideoGen/checkpoints/*

@@ -2,12 +2,12 @@ import os
 import shutil
 import torch
 from time import strftime
-from Libraries.SadTalker.src.utils.preprocess import CropAndExtract
-from Libraries.SadTalker.src.test_audio2coeff import Audio2Coeff  
-from Libraries.SadTalker.src.facerender.animate import AnimateFromCoeff
-from Libraries.SadTalker.src.generate_batch import get_data
-from Libraries.SadTalker.src.generate_facerender_batch import get_facerender_data
-from Libraries.SadTalker.src.utils.init_path import init_path
+from Libraries.Videogen.src.utils.preprocess import CropAndExtract
+from Libraries.Videogen.src.test_audio2coeff import Audio2Coeff  
+from Libraries.Videogen.src.facerender.animate import AnimateFromCoeff
+from Libraries.Videogen.src.generate_batch import get_data
+from Libraries.Videogen.src.generate_facerender_batch import get_facerender_data
+from Libraries.Videogen.src.utils.init_path import init_path
 
 class Args:
     def __init__(self, **kwargs):
