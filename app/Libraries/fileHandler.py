@@ -109,7 +109,7 @@ class handler:
         content = [
         {
           "type": "text",
-          "text": "you have every page of a given research paper, return the summary pagewise seperated by a line in the form of a lecture, dont start with page1,2 etc, try to finish the entire lecture within 3-5 minutes and dont forget to explain relevant tables and images. dont add any special characters. return a plain string."
+          "text": "you have every page of a given research paper, return the summary pagewise seperated by a line in the form of a lecture, dont start with page1,2 etc, try to finish the entire lecture within 1-2 minutes and dont forget to explain relevant tables and images. dont add any special characters. return a plain string."
         },
       ]
         images = os.listdir(imageDir)

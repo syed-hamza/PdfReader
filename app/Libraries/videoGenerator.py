@@ -36,7 +36,7 @@ class videoGen():
         background_enhancer=None,
         cpu=False,
         face3dvis=False,
-        still=False,
+        still=True,
         preprocess='crop',
         verbose=False,
         old_version=False,

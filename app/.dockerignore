@@ -1,0 +1,21 @@
+# Ignore Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore environment files
+.env
+.venv/
+
+# Ignore version control files
+.git/
+.gitignore
+
+# Ignore specific files or directories
+secret_config.json
+logs/
+
+testEnv/
+
+gfpgan/
+.app/gfpgan/
