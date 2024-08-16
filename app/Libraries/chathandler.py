@@ -16,7 +16,7 @@ from Libraries.fileHandler import handler
 from Libraries.QdrantRAGHandler import RAGHandler
 from Libraries.audioGenerator import gttsconverter
 from Libraries.VideoGen import videoGenMethod
-from Libraries.textHandler import texthandler
+# from Libraries.textHandler import texthandler
 
 
 file_path = './static/secretKey.json'
@@ -41,7 +41,7 @@ class chatHandlerClass:
         self.transcriber = whisperTranscriber()
         self.fileHandler = handler(self.RAG)
         self.videoGenerator = videoGenMethod()
-        self.texthandler = texthandler()
+        # self.texthandler = texthandler()
         self.model = "gpt-4o-mini"
         self.audioGenerator = gttsconverter(self.fileHandler,speed=1.25)
         pass
@@ -149,6 +149,11 @@ class chatHandlerClass:
         return self.chatAgent.isArxivAllowed()
     
     def summarizePDF(self,pdf_path):
+        savedsum = self.fileHandler.loadJSON(pdf_path,"summary")
+        if(savedsum !=[]):
+            lecture = self.texthandler(savedsum)
+            return lecture
+
         print("generating content")
         content,pdf_name = self.fileHandler.retreivePDFContent(pdf_path)
 
@@ -170,11 +175,24 @@ class chatHandlerClass:
 
         response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
         lecture = response.json()['choices'][0]['message']['content']
+        self.fileHandler.updateJSON(pdf_path,"summary",lecture)
+        
         self.fileHandler.updateJSON(pdf_name,"lecture",lecture)
         print("generating audio")
         audioPath = self.audioGenerator.textToAudio(lecture,pdf_name)
-        return self.texthandler(lecture)
+        print("HTML friendly lecture")
+        lecture = self.texthandler(lecture)
+        print("lecture:",lecture)
+        return lecture
     
+    def texthandler(self,text):
+        paragraphs = [para.strip() for para in text.split('\n\n') if para.strip()]
+        print(len(paragraphs))
+        html_output = ""
+        for i, paragraph in enumerate(paragraphs, 1):
+            html_output += f'<div id="paragraph-{i}">{paragraph}</div>\n'
+        return html_output
+
     def retrieveRelevanclassName(self, pdfname,timestamp):
         durations = self.fileHandler.getDurations(pdfname)
         pageNum = 0
@@ -182,7 +200,7 @@ class chatHandlerClass:
             if(durations[i]>=timestamp):
                 pageNum = i
                 break
-        return str(pageNum)
+        return str(pageNum+1)
 
     def retrieveRelevantPdfImage(self,pdfname,timestamp):
         durations = self.fileHandler.getDurations(pdfname)

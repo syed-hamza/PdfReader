@@ -23,7 +23,7 @@ class handler:
         self.confirmDir([self.pdfPath,self.audioPath,self.UploadFolder,self.logPath,self.tempPath,self.videoPath,self.SeperateImgDir])
         
     def updateJSON(self,name,title,data):
-        if(name[:-4]==".pdf"):
+        if(name[-4:]==".pdf"):
             name = Path(name).stem
         filePath = os.path.join(self.logPath,name+".json")
         with open(filePath, 'w+') as file:
@@ -38,6 +38,8 @@ class handler:
         
         
     def loadJSON(self,name,title):
+        if(name[-4:]==".pdf"):
+            name = Path(name).stem
         filePath = os.path.join(self.logPath,name+".json")
         if(not os.path.exists(filePath)):
             print("log file not found for :",filePath)
@@ -109,7 +111,7 @@ class handler:
         content = [
         {
           "type": "text",
-          "text": """Provide the summary of the entire research paper, add introduction, conclusion , citations etc."""
+          "text": """Provide the summary of the entire research paper, add introduction, conclusion , citations etc.Dont use markdown system and seperate paragraphs using a blank line. to bold or other highlights use html system like <b></b>"""
         },
       ]
         images = os.listdir(imageDir)

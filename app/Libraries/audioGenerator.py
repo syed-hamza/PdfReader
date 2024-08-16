@@ -15,7 +15,7 @@ class gttsconverter():
         files = []
         text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
 
-        individualPages = [i for n, i in enumerate(text.split("\n"))]
+        individualPages = [i for n, i in enumerate(text.split("\n\n"))]
         for n, text in enumerate(individualPages):
             if(text==""):
                 continue

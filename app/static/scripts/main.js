@@ -1,7 +1,7 @@
 let currentConversationId = null;
 let mediaRecorder;
 let audioChunks = [];
-
+var initid = 'paragraph-1';
 const chatHistory = document.getElementById('chat-history');
 const audioIcon = document.getElementById('audio-icon');
 
@@ -257,20 +257,29 @@ function LoadAudio() {
 function audioTimer() {
     let audioPlayer = document.getElementById("audioPlayer");
 
-    audioPlayer.addEventListener("timeupdate", function() {
+    audioPlayer.addEventListener("timeupdate",async function() {
         let currentTime = audioPlayer.currentTime;
 
         if (audioPlayer.paused || audioPlayer.ended) return;
 
         // Send the current timestamp to the server every 0.5 seconds
-        console.log("sending pdf", localStorage.getItem("pdf"));
-        fetch('/update_timestamp', {
+        var id = await fetch('/update_timestamp', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ timestamp: currentTime, pdfName: localStorage.getItem("pdf") })
-        });
+        })
+        .then(response => response.text());
+        id = `paragraph-${id}`
+        console.log("id: ",id)
+        if(id != initid){
+            var initparagraph = document.getElementById(initid)
+            initparagraph.style.backgroundColor = '';
+            var paragraph = document.getElementById(id)
+            paragraph.style.backgroundColor = 'yellow'; 
+            initid = id
+        }
     });
 }
 function init() {
