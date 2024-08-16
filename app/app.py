@@ -117,13 +117,21 @@ def get_video_path():
     print(os.path.exists(video_path))
     return jsonify({'video_url': video_path})
 
+# @app.route('/update_timestamp', methods=['POST'])
+# def update_timestamp():
+#     data = request.get_json()
+#     timestamp = data['timestamp']
+#     pdfname = data['pdfName']
+#     image = chatHandler.retrieveRelevantPdfImage(pdfname,timestamp) #return image
+#     return image
+
 @app.route('/update_timestamp', methods=['POST'])
 def update_timestamp():
     data = request.get_json()
     timestamp = data['timestamp']
     pdfname = data['pdfName']
-    image = chatHandler.retrieveRelevantPdfImage(pdfname,timestamp) #return image
-    return image
+    classname = chatHandler.retrieveRelevanclassName(pdfname,timestamp) #return image
+    return classname
 
 @app.route('/get_audio')
 def serve_audio():

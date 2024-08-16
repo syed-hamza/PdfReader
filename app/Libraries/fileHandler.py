@@ -136,7 +136,7 @@ class handler:
             audio_segment = AudioSegment.from_mp3(mp3_file)
             combined += audio_segment
 
-        combined.export(name+".mp3", format='mp3')
+        combined.export(os.path.join(self.audioPath,name+".mp3"), format='mp3')
         sm = 0
         cumdur = []
         for i in durations:
@@ -164,4 +164,4 @@ class handler:
     def getAudio(self,pdfname):
         if(pdfname[-4:]==".pdf"):
             pdfname = Path(pdfname).stem
-        return send_file(os.path.join(self.audioPath,pdfname+"mp3"))
+        return send_file(os.path.join(self.audioPath,pdfname+".mp3"))

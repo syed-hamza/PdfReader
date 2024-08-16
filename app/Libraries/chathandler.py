@@ -16,6 +16,7 @@ from Libraries.fileHandler import handler
 from Libraries.QdrantRAGHandler import RAGHandler
 from Libraries.audioGenerator import gttsconverter
 from Libraries.VideoGen import videoGenMethod
+from Libraries.textHandler import texthandler
 
 
 file_path = './static/secretKey.json'
@@ -40,6 +41,7 @@ class chatHandlerClass:
         self.transcriber = whisperTranscriber()
         self.fileHandler = handler(self.RAG)
         self.videoGenerator = videoGenMethod()
+        self.texthandler = texthandler()
         self.model = "gpt-4o-mini"
         self.audioGenerator = gttsconverter(self.fileHandler,speed=1.25)
         pass
@@ -170,10 +172,18 @@ class chatHandlerClass:
         lecture = response.json()['choices'][0]['message']['content']
         self.fileHandler.updateJSON(pdf_name,"lecture",lecture)
         print("generating audio")
-        print("lecture",lecture)
         audioPath = self.audioGenerator.textToAudio(lecture,pdf_name)
-        return str(lecture)
+        return self.texthandler(lecture)
     
+    def retrieveRelevanclassName(self, pdfname,timestamp):
+        durations = self.fileHandler.getDurations(pdfname)
+        pageNum = 0
+        for i in range(len(durations)):
+            if(durations[i]>=timestamp):
+                pageNum = i
+                break
+        return str(pageNum)
+
     def retrieveRelevantPdfImage(self,pdfname,timestamp):
         durations = self.fileHandler.getDurations(pdfname)
         pageNum = 0

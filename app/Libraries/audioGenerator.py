@@ -2,7 +2,7 @@ from gtts import gTTS
 import os
 from mutagen.mp3 import MP3
 from pydub import AudioSegment
-
+import re
 
 class gttsconverter():
     def __init__(self, handler, speed=1.0):
@@ -13,6 +13,8 @@ class gttsconverter():
     def textToAudio(self, text, name):
         durations = []
         files = []
+        text = re.sub(r'[^a-zA-Z0-9\s]', '', text)
+
         individualPages = [i for n, i in enumerate(text.split("\n"))]
         for n, text in enumerate(individualPages):
             if(text==""):
