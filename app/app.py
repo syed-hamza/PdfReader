@@ -89,8 +89,8 @@ def isVideoGenerated():
 
 @app.route('/getSummary')
 def getSummary():
-    pdf_path = request.args.get('filename')
-    summary = chatHandler.summarizePDF(pdf_path)
+    pdfName = request.args.get('filename')
+    summary = chatHandler.summarizePDFOllama(pdfName)
     return summary
 
 

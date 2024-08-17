@@ -95,7 +95,7 @@ class RAGHandler:
             pass
 
     def indexSoloPdf(self, pdfPath):
-        documents = SimpleDirectoryReader(pdfPath).load_data()
+        documents = SimpleDirectoryReader(input_files=[pdfPath]).load_data()
         PDFindex = MultiModalVectorStoreIndex.from_documents(
             documents,
             storage_context=self.storage_context,

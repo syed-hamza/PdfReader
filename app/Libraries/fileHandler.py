@@ -47,7 +47,10 @@ class handler:
         else:
             with open(filePath, 'r') as file:
                 filedata = json.load(file)
-                return filedata[title]
+                if(title in filedata.keys()):
+                    return filedata[title]
+                else:
+                    return []
             
     def videoFileExists(self,fileName):
         fileName = os.path.join(self.videoPath,self.fileName[:-4]+".mp4")
@@ -111,7 +114,7 @@ class handler:
         content = [
         {
           "type": "text",
-          "text": """Provide the summary of the entire research paper, add introduction, conclusion , citations etc.Dont use markdown system and seperate paragraphs using a blank line. to bold or other highlights use html system like <b></b>"""
+          "text": """Provide the summary of the entire research paper, add introduction, conclusion , citations etc.Dont use markdown system and seperate paragraphs using a blank line. to bold or other highlights use html system like <b></b>. Use upper case letter only for the first letter of the word if needed, the entire word should not be made up of upper case letters."""
         },
       ]
         images = os.listdir(imageDir)
@@ -127,12 +130,30 @@ class handler:
             content.append(data)
         return content,pdf_name
     
+    def retreivePDFContentOllama(self,pdfPath):
+        def encode_image(image_path):
+            with open(image_path, "rb") as image_file:
+                return base64.b64encode(image_file.read()).decode('utf-8')
+        pdf_name = Path(pdfPath).stem
+        imageDir = os.path.join(self.outputImgdir,pdf_name)
+        prompt = """Provide the summary of the entire research paper, add introduction, conclusion , citations etc.Dont use markdown system and seperate paragraphs using a blank line. to bold or other highlights use html system like <b></b>. Use upper case letter only for the first letter of the word if needed, the entire word should not be made up of upper case letters.i am providing you with each pafe one by one. your previous output: """     
+        images = []
+        imagePaths = os.listdir(imageDir)
+        for path in imagePaths:
+            image_path = os.path.join(imageDir,path)
+            base64_image = encode_image(image_path)
+            
+            images.append(base64_image)
+        return prompt,images,pdf_name
+    
     def saveAudio(self,audio,name):
         path = os.path.join(self.audioPath,name)
         audio.save(path+".mp3")
         return path
     
     def MergeAndSaveAudioAndDuration(self,files,name,durations):
+        if(name[-4:]==".pdf"):
+            name = Path(name).stem
         combined = AudioSegment.from_mp3(files[0])
         for mp3_file in files[1:]:
             audio_segment = AudioSegment.from_mp3(mp3_file)

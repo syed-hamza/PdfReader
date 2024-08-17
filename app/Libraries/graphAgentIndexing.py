@@ -118,17 +118,14 @@ Format your response as a list of search queries."""
         return self.AllowRequests and self.RequestData and state['iteration_count'] < 2 
 
     def generateAnswers(self, state: AgentState) -> AgentState:
-        # Query the already indexed documents
         print(state['task'])
         retrieved_text= self.RAGHandler.query(state['task'])
-        # Combine the retrieved text with any previously retrieved content
         combined_content = f"context: {retrieved_text}\n"
         print(" "*30,combined_content)
         response = self.model.with_structured_output(Answer).invoke([
             SystemMessage(content=self.AnswerGeneratorPrompt),
             HumanMessage(content=state['task']),
             HumanMessage(content=combined_content),
-            # HumanMessage(content="The following is the history of the conversation:\n"+self.history),
         ])
         
         self.answer = response.answer
@@ -139,6 +136,52 @@ Format your response as a list of search queries."""
             'required_info': response.required_info,
             'iteration_count': state['iteration_count'] + 1
         }
+
+    import ollama
+
+    def generateAnswers(self, state: dict) -> dict:
+        print(state['task'])
+        retrieved_text = self.RAGHandler.query(state['task'])
+        combined_content = f"context: {retrieved_text}\n"
+        print(" " * 30, combined_content)
+
+        # Define the prompt template
+        prompt = f"""
+        System: {self.AnswerGeneratorPrompt}
+        Human: {state['task']}
+        Human: {combined_content}
+        """
+
+        # Call Ollama model
+        response = ollama.generate(model='your_model_name', prompt=prompt)
+
+        # Parse the response
+        # Note: You'll need to implement a way to parse the structured output
+        parsed_response = self.parse_structured_output(response['response'])
+
+        self.answer = parsed_response['answer']
+        self.RequestData = len(parsed_response['required_info']) > 0
+        print("Requested data:", self.RequestData, parsed_response['required_info'])
+
+        return {
+            'generated_answer': parsed_response['answer'],
+            'required_info': parsed_response['required_info'],
+            'iteration_count': state['iteration_count'] + 1
+        }
+
+    def parse_structured_output(self, text: str) -> dict:
+        # Implement your parsing logic here
+        # This should extract 'answer' and 'required_info' from the text
+        # For simplicity, let's assume a basic parsing:
+        lines = text.split('\n')
+        answer = ""
+        required_info = []
+        for line in lines:
+            if line.startswith("Answer: "):
+                answer = line[7:].strip()
+            elif line.startswith("Required Info: "):
+                required_info = line[14:].strip().split(', ')
+        return {"answer": answer, "required_info": required_info}
 
     def retrieveData(self, state: AgentState) -> AgentState:
         retreivedURL = {}

@@ -7,7 +7,8 @@ import base64
 import re
 import openai
 import requests
-
+import ollama
+import PyPDF2
 
 from Libraries.transcriber import whisperTranscriber
 from Libraries.graphAgentIndexing import agent
@@ -15,7 +16,6 @@ from Libraries.fileHandler import handler
 # from Libraries.videoGenerator import videoGen
 from Libraries.QdrantRAGHandler import RAGHandler
 from Libraries.audioGenerator import gttsconverter
-from Libraries.VideoGen import videoGenMethod
 # from Libraries.textHandler import texthandler
 
 
@@ -40,7 +40,6 @@ class chatHandlerClass:
         self.chatAgent = agent(model, tools,self.RAG)
         self.transcriber = whisperTranscriber()
         self.fileHandler = handler(self.RAG)
-        self.videoGenerator = videoGenMethod()
         # self.texthandler = texthandler()
         self.model = "gpt-4o-mini"
         self.audioGenerator = gttsconverter(self.fileHandler,speed=1.25)
@@ -78,15 +77,15 @@ class chatHandlerClass:
     def GetResponse(self,user_message):
         response_actions = self.chatAgent(user_message)
         response_message = self.chatAgent.getText()
-        retrieved_images = self.chatAgent.retrieved_images
+        # retrieved_images = self.chatAgent.retrieved_images
         print('actions:',response_actions)
-        return response_actions,response_message,retrieved_images
+        return response_actions,response_message#,retrieved_images
     
     def chat(self,conversation_id,user_message):
         conversations = self.fileHandler.load_conversations()
         for conversation in conversations:
             if conversation['id'] == conversation_id:
-                response_actions,response_message,retrieved_images = self.GetResponse(user_message)
+                response_actions,response_message = self.GetResponse(user_message)
 
                 processed_message = self.process_message_with_images(response_message)
                 self.updateConversation(conversation,user_message,response_message)
@@ -94,7 +93,6 @@ class chatHandlerClass:
                 response = {
                     'actions': response_actions,
                     'message': processed_message,
-                    'retrieved_images': retrieved_images
                 }
                 # print("actions:\n",response)
                 return jsonify(response)
@@ -123,7 +121,7 @@ class chatHandlerClass:
             if conversation['id'] == conversation_id:
                 filepath = self.fileHandler.saveFile(file)
                 user_message = self.transcriber(filepath)
-                response_actions,response_message,retrieved_images = self.GetResponse(user_message)
+                response_actions,response_message = self.GetResponse(user_message)
                 self.chat(conversation['id'],user_message)
                 self.updateConversation(conversation,user_message,response_message)
                 self.fileHandler.save_conversations(conversations)
@@ -149,7 +147,7 @@ class chatHandlerClass:
         return self.chatAgent.isArxivAllowed()
     
     def summarizePDF(self,pdf_path):
-        savedsum = self.fileHandler.loadJSON(pdf_path,"summary")
+        savedsum = self.fileHandler.loadJSON(pdf_path,"lecture")
         if(savedsum !=[]):
             lecture = self.texthandler(savedsum)
             return lecture
@@ -172,7 +170,6 @@ class chatHandlerClass:
         ],
         }
         print("generating openai response")
-
         response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
         lecture = response.json()['choices'][0]['message']['content']
         self.fileHandler.updateJSON(pdf_path,"summary",lecture)
@@ -185,8 +182,42 @@ class chatHandlerClass:
         print("lecture:",lecture)
         return lecture
     
+    def summarizePDFOllama(self,pdfName):
+        # savedsum = self.fileHandler.loadJSON(pdfName,"lecture")
+        # if(savedsum !=[]):
+        #     lecture = self.texthandler(savedsum)
+        #     return lecture
+
+        print("generating content")
+        pdfPath = os.path.join(self.fileHandler.pdfPath,pdfName)
+        prompt = """Provide the summary of the entire research paper, add introduction, conclusion , citations etc each topic seperated into paragraphs.Remember to bold the headings like <b>Introduction</b>Dont use markdown system and seperate paragraphs using '\n' instead of <br>. to bold or other highlights use html system like <b></b>. Use upper case letter only for the first letter of the word if needed, the entire word should not be made up of upper case letters. """
+
+
+        def extract_text_from_pdf(pdf_path):
+            text = ""
+            with open(pdf_path, "rb") as file:
+                reader = PyPDF2.PdfReader(file)
+                for page in reader.pages:
+                    text += page.extract_text()
+            return text
+        retrieval_results = extract_text_from_pdf(pdfPath)
+        response = ollama.chat(model='llava:13b', messages=[
+            {
+                'role': 'user',
+                'content': f'context:{retrieval_results} prompt:{prompt}',
+            },
+            ])
+        lecture = response['message']['content']
+        print(lecture)
+        self.fileHandler.updateJSON(pdfName,"lecture",lecture)
+        print("generating audio")
+        audioPath = self.audioGenerator.textToAudio(lecture,pdfName)
+        print("HTML friendly lecture")
+        lecture = self.texthandler(lecture)
+        return lecture
+    
     def texthandler(self,text):
-        paragraphs = [para.strip() for para in text.split('\n\n') if para.strip()]
+        paragraphs = [para.strip() for para in text.split('\n') if para.strip()]
         print(len(paragraphs))
         html_output = ""
         for i, paragraph in enumerate(paragraphs, 1):
