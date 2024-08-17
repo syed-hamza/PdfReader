@@ -3,10 +3,8 @@ mutagen==1.47.0
 pydub==0.25.1
 Flask==3.0.3
 requests==2.32.3
-qdrant-client==1.11.0
 langchain-openai==0.1.21
 langchain_chroma
-openai==1.40.10
 langchain-core==0.2.30
 langchain-community==0.2.11
 pydantic==2.8.2
@@ -14,7 +12,6 @@ arxiv==2.1.3
 PyMuPDF==1.24.9
 Pillow==10.4.0
 opencv-python==4.10.0.84
-torch==2.0.1
 scipy==1.10.1
 tqdm>=4.66.1,<5.0.0
 pyyaml==6.0.1
@@ -26,6 +23,8 @@ numpy==1.23.4
 huggingface-hub==0.24.5
 langgraph==0.2.4
 langchain_chroma
+sentence-transformers
 chromadb
-transformers
 ollama
+PyPDF2
+pypdf

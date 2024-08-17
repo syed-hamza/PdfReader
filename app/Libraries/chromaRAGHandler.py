@@ -15,7 +15,6 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 import fitz  # PyMuPDF
 from PIL import Image
 import os
-from llama_index.core.schema import ImageNode
 from pathlib import Path
 
 
