@@ -86,9 +86,9 @@ class chatHandlerClass:
         for conversation in conversations:
             if conversation['id'] == conversation_id:
                 response_actions,response_message = self.GetResponse(user_message)
-
+                print("response_message:",response_message)
                 processed_message = self.process_message_with_images(response_message)
-                self.updateConversation(conversation,user_message,response_message)
+                self.updateConversation(conversation,user_message,processed_message)
                 self.save_conversations(conversations)
                 response = {
                     'actions': response_actions,

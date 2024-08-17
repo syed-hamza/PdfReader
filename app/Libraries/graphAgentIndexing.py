@@ -11,6 +11,7 @@ from langchain_core.pydantic_v1 import BaseModel
 import os
 import arxiv
 import json
+import ollama
 
 # from Libraries.RAGHandler import RAGHandler
 
@@ -42,16 +43,16 @@ class agent():
 
 Your response should be structured as follows:
 1. Answer: Provide a concise answer to the user's question based on available information, if the user asks to display any paper put the topic in the requiredinfo.make sure you use the context for relevant information and not make your own.
-2. Required Info: If a person requests any research paper(like display or show) this list should include the title of the paper.
+2. Required Info: If and only if a person requests any research paper(like display or show) this list should include the title of the paper. Otherwise the list should be empty. Do not put anything in the list unless you are absolutely certain a new research paper is needed. It should be empty most of the time. to call it only use definitive terms like ["Neural Networks"]
 
-Remember to be informative, accurate, and identify gaps in knowledge when necessary. If you dont have the information, just put in the required info please."""
+Remember to be informative and accurate."""
 
         self.RetreiverPrompt = """Given the research plan or required information, generate specific queries to search for on ArXiv. These queries should be focused and relevant to the topics that need more information.
 
 Format your response as a list of search queries."""
         self.websiteActionPrompt = self.getWebsiteActionPrompt()
         self.arxivRetriever = load_tools(Searchtools)[0]
-        self.model = model
+        self.model = 'llava:13b'
         self.generateGraph()
         self.answer = ""
         self.RequestData = False
@@ -79,9 +80,9 @@ Format your response as a list of search queries."""
         return self.Actiontools.returnActions()
 
     def getWebsiteActionPrompt(self):
-        prompt = "Here are the functions to call to change the users view, write the string form of python code to call the function appropriately based on what actions are required to satisfy the user based on his question and the answer, make sure its directly executable as i will run the exec function  and no error should be raised.Only return the code and nothing else. make sure you call multiple actions if needed and dont forget to put their relevant arguments."
+        prompt = "The following functions are already defined,these functions are called to change the users view, write the string form of python code to call the function appropriately based on what actions are required to satisfy the user based on his question and the answer, make sure its directly executable as i will run the exec function  and no error should be raised.Only return the code(call the function with the relevant arguments only, DO NOT WRITE THE FUNCTION DEFINITION) and nothing else. Make sure you call multiple actions if needed and dont forget to put their relevant arguments.Do not give any comments. strictly follow the function definitions. Again, do not define the functions, only call them with relevant arguments."
         function_list = [
-            self.Actiontools.displayPdf,
+            # self.Actiontools.displayPdf,
             self.Actiontools.CreateNewChat,
             self.Actiontools.answerUser,
         ]
@@ -115,54 +116,49 @@ Format your response as a list of search queries."""
         self.graph = graph.compile()
 
     def should_retrieve_data(self, state: AgentState) -> bool:
-        return self.AllowRequests and self.RequestData and state['iteration_count'] < 2 
+        return self.AllowRequests and self.RequestData and state['iteration_count'] < 2  
 
-    def generateAnswers(self, state: AgentState) -> AgentState:
-        print(state['task'])
-        retrieved_text= self.RAGHandler.query(state['task'])
-        combined_content = f"context: {retrieved_text}\n"
-        print(" "*30,combined_content)
-        response = self.model.with_structured_output(Answer).invoke([
-            SystemMessage(content=self.AnswerGeneratorPrompt),
-            HumanMessage(content=state['task']),
-            HumanMessage(content=combined_content),
-        ])
+    # def generateAnswers(self, state: AgentState) -> AgentState:
+    #     print(state['task'])
+    #     retrieved_text= self.RAGHandler.query(state['task'])
+    #     combined_content = f"context: {retrieved_text}\n"
+    #     print(" "*30,combined_content)
+    #     response = self.model.with_structured_output(Answer).invoke([
+    #         SystemMessage(content=self.AnswerGeneratorPrompt),
+    #         HumanMessage(content=state['task']),
+    #         HumanMessage(content=combined_content),
+    #     ])
         
-        self.answer = response.answer
-        self.RequestData = len(response.required_info) > 0
-        print("Requested data:",self.RequestData,response.required_info)
-        return {
-            'generated_answer': response.answer,
-            'required_info': response.required_info,
-            'iteration_count': state['iteration_count'] + 1
-        }
-
-    import ollama
+    #     self.answer = response.answer
+    #     self.RequestData = len(response.required_info) > 0
+    #     print("Requested data:",self.RequestData,response.required_info)
+    #     return {
+    #         'generated_answer': response.answer,
+    #         'required_info': response.required_info,
+    #         'iteration_count': state['iteration_count'] + 1
+    #     }
 
     def generateAnswers(self, state: dict) -> dict:
-        print(state['task'])
         retrieved_text = self.RAGHandler.query(state['task'])
         combined_content = f"context: {retrieved_text}\n"
-        print(" " * 30, combined_content)
 
-        # Define the prompt template
         prompt = f"""
         System: {self.AnswerGeneratorPrompt}
         Human: {state['task']}
         Human: {combined_content}
         """
 
-        # Call Ollama model
-        response = ollama.generate(model='your_model_name', prompt=prompt)
+        response = ollama.generate(model=self.model, prompt=prompt)['response']
 
-        # Parse the response
-        # Note: You'll need to implement a way to parse the structured output
-        parsed_response = self.parse_structured_output(response['response'])
+        
+        parsed_response = self.parse_structured_output(response)
 
         self.answer = parsed_response['answer']
-        self.RequestData = len(parsed_response['required_info']) > 0
+        # if len(parsed_response['required_info']) > 0 and not parsed_response['required_info'][0]=='None':
+        #     self.RequestData = True
+        self.RequestData = False
         print("Requested data:", self.RequestData, parsed_response['required_info'])
-
+        print(self.answer)
         return {
             'generated_answer': parsed_response['answer'],
             'required_info': parsed_response['required_info'],
@@ -170,9 +166,6 @@ Format your response as a list of search queries."""
         }
 
     def parse_structured_output(self, text: str) -> dict:
-        # Implement your parsing logic here
-        # This should extract 'answer' and 'required_info' from the text
-        # For simplicity, let's assume a basic parsing:
         lines = text.split('\n')
         answer = ""
         required_info = []
@@ -192,21 +185,21 @@ Format your response as a list of search queries."""
                 self.RAGHandler.index_pdf(url)
                 retreivedURL[titles[n]] = url                
                 retreivedSummary[titles[n]] = summaries[n]
-        # We're not querying here anymore, just indexing new documents
         return {'retrieved_URLs': retreivedURL,'retreivedSummary': retreivedSummary}
 
     def websiteActions(self, state: AgentState) -> AgentState:
-        messages = [
-            HumanMessage(content=state['task']),
-            HumanMessage(content=f"Retrieved PDF URLs: {json.dumps(state['retrieved_URLs'], indent=2)}."),
-            HumanMessage(content=state['generated_answer']),
-            SystemMessage(content=self.websiteActionPrompt)
-        ]
+        prompt = f"""
+        System: {self.websiteActionPrompt}
+        Human: {state['task']}
+        Human: {state['generated_answer']}
+        """
+
+        
         self.history += "Answer: " + state['generated_answer'] + "\n"
-        actions = self.model.invoke(messages)
+        actions = ollama.generate(model=self.model, prompt=prompt)['response']
         self.actions = actions
         print("Returning Actions:",self.actions)
-        return {'actions': str(actions)}
+        return {'actions': actions}
 
     def __call__(self, prompt: str):
         self.prompt = prompt
@@ -224,7 +217,7 @@ Format your response as a list of search queries."""
         }
         for s in self.graph.stream(initial_state, thread):
             pass
-        self.actions = self.actions.content.replace("python","")
+        self.actions = self.actions.replace("python","")
         self.actions = self.actions.replace("```","")
         try:
             exec(self.actions)

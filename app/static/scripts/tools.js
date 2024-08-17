@@ -6,11 +6,14 @@ const parseActions = (data) => {
     actions.forEach(item => {
         const key = Object.keys(item)[0];
         const value = item[key];
+        console.log("key:",key)
+        console.log("value:",value)
+        console.log("value Response:",value['response'])
         if(key === "newChat"){
             newChat();
         }
         if(key === "addMessage"){
-            addmessage(value['input'], data.message);
+            addmessage(value['input'],value['response'])
         }
         if(key === "display"){
             displayPDF(value);

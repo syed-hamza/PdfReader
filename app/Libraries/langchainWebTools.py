@@ -26,7 +26,7 @@ class agentTools:
         ''' this is a function definition
         arg1 (str): url of the retreived PDF from arxiv only. DO NOT PUT ANY IMAGE PATH or it will be ignored. PDF ONLY.
 
-        displays the PDF to the user, does not return anything. Call this when users asks you to show or display any paper.
+        displays the PDF to the user, does not return anything. Call this when users asks you to show or display any paper, do not class otherwise.
         Usage:
         self.tools.displayPdf(URL) 
         '''
@@ -49,10 +49,10 @@ class agentTools:
 
     def answerUser(self,answer:str):
         ''' this function returns a text response to the user. This action should only be taken once.
-            answer (str): Your answer in python string format only. Make sure the answer is generated from the data u recieved from the tool and summarize it enough to fit in 1-2 sentences.
-            Returning this function is a must ,even if the user asks only for the research paper, just answer "Sure" or other accepting phrases.
+            answer (str): Your answer in python string format only. Make sure the answer is generated from the data you recieved from the tool.
+            Returning this function is a must.if the user asks only for the research paper, just answer "Sure" or other accepting phrases.
             
-            shows/displays your answer to the user 
+            shows/displays your text answer to the user 
             does not return anything
         '''
         if answer is None:
