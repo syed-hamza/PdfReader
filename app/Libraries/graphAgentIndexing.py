@@ -39,20 +39,21 @@ class Actions(BaseModel):
 class agent():
     def __init__(self, model, Searchtools,RAGHandler,AllowRequests=True):
         self.Actiontools = agentTools(self)
-        self.AnswerGeneratorPrompt = """You are a senior Librarian tasked with answering questions and identifying areas where more information is needed. Based on the user's question and any retrieved content, provide an answer and list any topics or questions that require further research, Use only the context provided, not your own knowledge. Make sure you list topics if the context doesnt show relevant information.
+        self.AnswerGeneratorPrompt = """You are a senior researcher tasked with answering questions and identifying areas where more information is needed. Based on the user's question and any retrieved content, provide an answer and list any topics or questions that require further research, Use only the context provided, not your own knowledge. Make sure you list topics if the context doesnt show relevant information.
 
 Your response should be structured as follows:
-1. Answer: Provide a concise answer to the user's question based on available information, if the user asks to display any paper put the topic in the requiredinfo.make sure you use the context for relevant information and not make your own.
+1. Answer: Provide a detailed answer to the user's question based on available information, if the user asks to display any paper put the topic in the requiredinfo. Make sure you use the context for relevant information and not make your own.
 2. Required Info: If and only if a person requests any research paper(like display or show) this list should include the title of the paper. Otherwise the list should be empty. Do not put anything in the list unless you are absolutely certain a new research paper is needed. It should be empty most of the time. to call it only use definitive terms like ["Neural Networks"]
-
-Remember to be informative and accurate."""
+Try highlighting important parts of the answer using html <b></b> and leaving a line after every paragraph. Make the answer as detailed as possible based on the context.
+Remember to be informative and accurate.Strictly follow the following output format.
+output Format: {'Answer': Your answer ,'Required Info':list of information needed}."""
 
         self.RetreiverPrompt = """Given the research plan or required information, generate specific queries to search for on ArXiv. These queries should be focused and relevant to the topics that need more information.
 
 Format your response as a list of search queries."""
         self.websiteActionPrompt = self.getWebsiteActionPrompt()
         self.arxivRetriever = load_tools(Searchtools)[0]
-        self.model = 'llava:13b'
+        self.model = model
         self.generateGraph()
         self.answer = ""
         self.RequestData = False
@@ -71,7 +72,7 @@ Format your response as a list of search queries."""
         return self.AllowRequests
     
     def getText(self):
-        return self.answer
+        return self.Actiontools.getAnswer()
     
     def getUserQuery(self):
         return self.prompt
@@ -80,7 +81,7 @@ Format your response as a list of search queries."""
         return self.Actiontools.returnActions()
 
     def getWebsiteActionPrompt(self):
-        prompt = "The following functions are already defined,these functions are called to change the users view, write the string form of python code to call the function appropriately based on what actions are required to satisfy the user based on his question and the answer, make sure its directly executable as i will run the exec function  and no error should be raised.Only return the code(call the function with the relevant arguments only, DO NOT WRITE THE FUNCTION DEFINITION) and nothing else. Make sure you call multiple actions if needed and dont forget to put their relevant arguments.Do not give any comments. strictly follow the function definitions. Again, do not define the functions, only call them with relevant arguments."
+        prompt = "The following functions are already defined,these functions are called to change the users view, write the string form of python code to call the function appropriately based on what actions are required to satisfy the user based on his question and the answer, make sure its directly executable as i will run the exec function  and no error should be raised.Only return the code(call the function with the relevant arguments only, DO NOT WRITE THE FUNCTION DEFINITION) and nothing else. Make sure you call multiple actions if needed and dont forget to put their relevant arguments.Do not give any comments. strictly follow the function definitions. Again, do not define the functions, only call them with relevant arguments. Try making the answer detailed and split into paragraphs with highlighted titles."
         function_list = [
             # self.Actiontools.displayPdf,
             self.Actiontools.CreateNewChat,
@@ -140,41 +141,36 @@ Format your response as a list of search queries."""
 
     def generateAnswers(self, state: dict) -> dict:
         retrieved_text = self.RAGHandler.query(state['task'])
+        print("Question:",state['task'])
         combined_content = f"context: {retrieved_text}\n"
-
         prompt = f"""
-        System: {self.AnswerGeneratorPrompt}
-        Human: {state['task']}
-        Human: {combined_content}
+        User Question: {state['task']} \n
+        {combined_content}\n
+        instructions: {self.AnswerGeneratorPrompt}
         """
 
         response = ollama.generate(model=self.model, prompt=prompt)['response']
-
-        
-        parsed_response = self.parse_structured_output(response)
-
-        self.answer = parsed_response['answer']
-        # if len(parsed_response['required_info']) > 0 and not parsed_response['required_info'][0]=='None':
-        #     self.RequestData = True
+        # parsed_response = self.parse_structured_output(response)
+        # print("parsed response:",parsed_response)
+        self.answer = response
         self.RequestData = False
-        print("Requested data:", self.RequestData, parsed_response['required_info'])
-        print(self.answer)
+        # print("Requested data:", self.RequestData, parsed_response['required_info'])
         return {
-            'generated_answer': parsed_response['answer'],
-            'required_info': parsed_response['required_info'],
+            'generated_answer': response,
+            'required_info': [],#parsed_response['required_info'],
             'iteration_count': state['iteration_count'] + 1
         }
 
-    def parse_structured_output(self, text: str) -> dict:
-        lines = text.split('\n')
-        answer = ""
-        required_info = []
-        for line in lines:
-            if line.startswith("Answer: "):
-                answer = line[7:].strip()
-            elif line.startswith("Required Info: "):
-                required_info = line[14:].strip().split(', ')
-        return {"answer": answer, "required_info": required_info}
+    # def parse_structured_output(self, text: str) -> dict:
+    #     lines = text.split('\n')
+    #     answer = ""
+    #     required_info = []
+    #     for line in lines:
+    #         if line.startswith("Answer: "):
+    #             answer = line[7:].strip()
+    #         elif line.startswith("Required Info: "):
+    #             required_info = line[14:].strip().split(', ')
+    #     return {"answer": answer, "required_info": required_info}
 
     def retrieveData(self, state: AgentState) -> AgentState:
         retreivedURL = {}
@@ -190,8 +186,8 @@ Format your response as a list of search queries."""
     def websiteActions(self, state: AgentState) -> AgentState:
         prompt = f"""
         System: {self.websiteActionPrompt}
-        Human: {state['task']}
-        Human: {state['generated_answer']}
+        Human Question: {state['task']}
+        Answer to return to user: {state['generated_answer']}
         """
 
         

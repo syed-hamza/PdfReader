@@ -138,5 +138,8 @@ def serve_audio():
     pdfName =  request.args.get('pdfName')
     return chatHandler.getAudio(pdfName)
 
+# if __name__ == '__main__':
+#     app.run(ssl_context=('cert.pem', 'key.pem'),debug=True,use_reloader=False, host="0.0.0.0")
+
 if __name__ == '__main__':
     app.run(debug=True,use_reloader=False, host="0.0.0.0")

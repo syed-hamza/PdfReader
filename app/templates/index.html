@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/highlight.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.7.2/styles/default.min.css">
     <link rel="stylesheet" href="./static/styles/main.css">
+    <link rel="stylesheet" href="./static/styles/loaders.css">
 </head>
 <body class="flex">
     <div class="w-1/5 bg-gray-200 p-4 column flex flex-col">
@@ -21,7 +22,9 @@
                 <p>Drag and drop PDF here or click to upload</p>
                 <input type="file" id="pdf-input" accept=".pdf" style="display: none;">
             </div>
-            <button class="mt-2 bg-blue-500 text-white px-4 py-2 rounded" onclick="summarize()">Generate Summary</button>
+            <button class="mt-2 bg-blue-500 text-white px-4 py-2 rounded" onclick="summarize()">Generate Summary 
+                <div id = "loader" class="hypnotic-2" style="display:none;"></div>
+            </button>
             <div id="audioContainer" class="mt-2 px-4 py-2 rounded">
                 <audio id="audioPlayer" controls>
                     <source id="audioSource" src="" type="audio/mp3">

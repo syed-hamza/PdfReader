@@ -47,10 +47,11 @@ class agentTools:
         '''
         self.actions.append({"newChat":""})
 
-    def answerUser(self,answer:str):
+    def answerUser(self,answer, question = ''):
         ''' this function returns a text response to the user. This action should only be taken once.
-            answer (str): Your answer in python string format only. Make sure the answer is generated from the data you recieved from the tool.
-            Returning this function is a must.if the user asks only for the research paper, just answer "Sure" or other accepting phrases.
+            answer (str): Your detailed answer in python string format only. Make sure the answer is generated from the data you recieved from the tool.
+            Returning this function is a must. If the user asks only for the research paper, just answer "Sure" or other accepting phrases.
+            Try highlighting important parts of the answer using html <b></b> and leaving a line after every paragraph. Make the asnwer as detailed as possible based on the context.
             
             shows/displays your text answer to the user 
             does not return anything
@@ -59,4 +60,7 @@ class agentTools:
             self.errorActions()
             return
         self.answer = answer
-        self.actions.append({"addMessage":{'input':self.agent.getUserQuery(),'response':answer}})
+        if question =='':
+            self.actions.append({"addMessage":{'input':self.agent.getUserQuery(),'response':answer}})
+        else:
+            self.actions.append({"addMessage":{'input':question,'response':answer}})

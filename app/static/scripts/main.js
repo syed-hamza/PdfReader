@@ -38,10 +38,14 @@ const loadConversation = (conversationId) => {
                 currentConversationId = conversation.id;
                 messages.innerHTML = '';
                 conversation.messages.forEach(msg => {
-                    const msgDiv = document.createElement('div');
-                    msgDiv.textContent = msg.text;
-                    msgDiv.className = msg.sender === 'user' ? 'p-2 bg-green-100 rounded self-end' : 'p-2 bg-gray-100 rounded self-start';
-                    messages.appendChild(msgDiv);
+                    // const msgDiv = document.createElement('div');
+                    // msgDiv.textContent = msg.text;
+                    // msgDiv.className = msg.sender === 'user' ? 'p-2 bg-green-100 rounded self-end' : 'p-2 bg-gray-100 rounded self-start';
+                    // messages.appendChild(msgDiv);
+                    if(msg.sender === 'user')
+                        addmessage(msg.text,'')
+                    else
+                        addmessage('',msg.text)
                 });
             }
         });
@@ -97,37 +101,42 @@ const deleteChat = () => {
 };
 
 const startRecording = () => {
-    navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(stream => {
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.start();
-            audioChunks = [];
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.start();
+                audioChunks = [];
 
-            mediaRecorder.addEventListener('dataavailable', event => {
-                audioChunks.push(event.data);
-            });
-
-            mediaRecorder.addEventListener('stop', () => {
-                const audioBlob = new Blob(audioChunks);
-                const audioFile = new File([audioBlob], 'audio.webm', { type: 'audio/webm' });
-
-                const formData = new FormData();
-                formData.append('audio', audioFile);
-
-                fetch(`/upload_audio?convId=${currentConversationId}`, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        console.error(data.error);
-                    } else {
-                        parseActions(data);
-                    }
+                mediaRecorder.addEventListener('dataavailable', event => {
+                    audioChunks.push(event.data);
                 });
-            });
-        });
+
+                mediaRecorder.addEventListener('stop', () => {
+                    const audioBlob = new Blob(audioChunks);
+                    const audioFile = new File([audioBlob], 'audio.webm', { type: 'audio/webm' });
+
+                    const formData = new FormData();
+                    formData.append('audio', audioFile);
+
+                    fetch(`/upload_audio?convId=${currentConversationId}`, {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.error(data.error);
+                        } else {
+                            parseActions(data);
+                        }
+                    });
+                });
+            })
+            .catch(error => console.error('Error accessing media devices.', error));
+    } else {
+        console.error('getUserMedia is not supported in this browser.');
+    }
 };
 
 const stopRecording = () => {
@@ -232,12 +241,14 @@ async function summarize(){
         console.log("no element selected")
         return;
     }
+    document.getElementById('loader').style.display = 'inline-block';
     await fetch(`/getSummary?filename=${pdfname}`)
         .then(response => response.text())
         .then(
             response => addmessage('',response)
         )
         .catch(error => console.error('Error:', error));
+    document.getElementById('loader').style.display = 'none';
     LoadAudio()
     
 }

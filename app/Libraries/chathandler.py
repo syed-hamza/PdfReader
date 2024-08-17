@@ -1,7 +1,5 @@
 import os
 import json
-from langchain_openai import ChatOpenAI
-import qdrant_client
 from flask import jsonify
 import base64
 import re
@@ -13,35 +11,32 @@ import PyPDF2
 from Libraries.transcriber import whisperTranscriber
 from Libraries.graphAgentIndexing import agent
 from Libraries.fileHandler import handler
-# from Libraries.videoGenerator import videoGen
-from Libraries.QdrantRAGHandler import RAGHandler
+from Libraries.chromaRAGHandler import RAGHandler
 from Libraries.audioGenerator import gttsconverter
-# from Libraries.textHandler import texthandler
+from Libraries.langchainWebTools import agentTools
 
 
-file_path = './static/secretKey.json'
-try:
-    # Read the JSON file
-    with open(file_path, 'r') as file:
-        data = json.load(file)
+# file_path = './static/secretKey.json'
+# try:
+#     # Read the JSON file
+#     with open(file_path, 'r') as file:
+#         data = json.load(file)
 
-    OPENAI_API_TOKEN = data["OpenAI"]
-    os.environ["OPENAI_API_KEY"] = OPENAI_API_TOKEN
-except:
-    OPENAI_API_TOKEN = "YOUR_OPENAI_KEY"
-    os.environ["OPENAI_API_KEY"] = OPENAI_API_TOKEN
+#     OPENAI_API_TOKEN = data["OpenAI"]
+#     os.environ["OPENAI_API_KEY"] = OPENAI_API_TOKEN
+# except:
+#     OPENAI_API_TOKEN = "YOUR_OPENAI_KEY"
+#     os.environ["OPENAI_API_KEY"] = OPENAI_API_TOKEN
 
 class chatHandlerClass:
-    def __init__(self,modelName = "gpt-4o-mini",tools =["arxiv"]):
-        model = ChatOpenAI(model=modelName)
+    def __init__(self,tools =["arxiv"]):
         self.tools = tools
-        self.client = qdrant_client.QdrantClient(path="qdrant_d_app")
-        self.RAG = RAGHandler(client = self.client)
-        self.chatAgent = agent(model, tools,self.RAG)
+        self.RAG = RAGHandler()
         self.transcriber = whisperTranscriber()
-        self.fileHandler = handler(self.RAG)
+        self.fileHandler = handler(self.RAG)    
+        self.chatAgent = agent('llama3.1:70b', tools,self.RAG)
+        self.agentTools = agentTools(self.chatAgent)
         # self.texthandler = texthandler()
-        self.model = "gpt-4o-mini"
         self.audioGenerator = gttsconverter(self.fileHandler,speed=1.25)
         pass
 
@@ -75,9 +70,25 @@ class chatHandlerClass:
         return processed_message
 
     def GetResponse(self,user_message):
-        response_actions = self.chatAgent(user_message)
-        response_message = self.chatAgent.getText()
+        # response_actions = self.chatAgent(user_message)
+        # response_message = self.chatAgent.getText()
         # retrieved_images = self.chatAgent.retrieved_images
+        answer_prompt = """You are a senior researcher tasked with answering questions and identifying areas where more information is needed. Based on the user's question and any retrieved content, provide an answer and list any topics or questions that require further research, Use only the context provided, not your own knowledge. Make sure you list topics if the context doesnt show relevant information.
+
+            Your response should be structured as follows:
+            1. Answer: Provide a detailed answer to the user's question based on available information, if the user asks to display any paper put the topic in the requiredinfo. Make sure you use the context for relevant information and not make your own.
+            Try highlighting important parts of the answer using html <b></b> and leaving a line after every paragraph. Make the answer as detailed as possible based on the context.
+        """
+        retrieved_text = self.RAG.query(user_message)
+        combined_content = f"context: {retrieved_text}\n"
+        prompt = f"""
+            User Question: {user_message} \n
+            {combined_content}\n
+            instructions: {answer_prompt}
+        """
+        response_message =  ollama.generate(model='llama3.1:70b', prompt=prompt)['response']
+        self.agentTools.answerUser(response_message,user_message)
+        response_actions = self.agentTools.returnActions()
         print('actions:',response_actions)
         return response_actions,response_message#,retrieved_images
     
@@ -121,6 +132,7 @@ class chatHandlerClass:
             if conversation['id'] == conversation_id:
                 filepath = self.fileHandler.saveFile(file)
                 user_message = self.transcriber(filepath)
+                print("transcribed: ",user_message)
                 response_actions,response_message = self.GetResponse(user_message)
                 self.chat(conversation['id'],user_message)
                 self.updateConversation(conversation,user_message,response_message)
@@ -140,47 +152,47 @@ class chatHandlerClass:
     def videoFileExists(self,fileName):
         return self.fileHandler.videoFileExists(fileName)
 
-    def toggleArxiv(self):
-        return self.chatAgent.toggleArxiv()
+    # def toggleArxiv(self):
+    #     return self.chatAgent.toggleArxiv()
 
-    def isArxivAllowed(self):
-        return self.chatAgent.isArxivAllowed()
+    # def isArxivAllowed(self):
+    #     return self.chatAgent.isArxivAllowed()
     
-    def summarizePDF(self,pdf_path):
-        savedsum = self.fileHandler.loadJSON(pdf_path,"lecture")
-        if(savedsum !=[]):
-            lecture = self.texthandler(savedsum)
-            return lecture
+    # def summarizePDF(self,pdf_path): #openai
+    #     savedsum = self.fileHandler.loadJSON(pdf_path,"lecture")
+    #     if(savedsum !=[]):
+    #         lecture = self.texthandler(savedsum)
+    #         return lecture
 
-        print("generating content")
-        content,pdf_name = self.fileHandler.retreivePDFContent(pdf_path)
+    #     print("generating content")
+    #     content,pdf_name = self.fileHandler.retreivePDFContent(pdf_path)
 
-        headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"
-        }
+    #     headers = {
+    #     "Content-Type": "application/json",
+    #     "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"
+    #     }
 
-        payload = {
-        "model": self.model,
-        "messages": [
-            {
-            "role": "user",
-            "content": content,
-            }
-        ],
-        }
-        print("generating openai response")
-        response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-        lecture = response.json()['choices'][0]['message']['content']
-        self.fileHandler.updateJSON(pdf_path,"summary",lecture)
+    #     payload = {
+    #     "model": self.model,
+    #     "messages": [
+    #         {
+    #         "role": "user",
+    #         "content": content,
+    #         }
+    #     ],
+    #     }
+    #     print("generating openai response")
+    #     response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+    #     lecture = response.json()['choices'][0]['message']['content']
+    #     self.fileHandler.updateJSON(pdf_path,"summary",lecture)
         
-        self.fileHandler.updateJSON(pdf_name,"lecture",lecture)
-        print("generating audio")
-        audioPath = self.audioGenerator.textToAudio(lecture,pdf_name)
-        print("HTML friendly lecture")
-        lecture = self.texthandler(lecture)
-        print("lecture:",lecture)
-        return lecture
+    #     self.fileHandler.updateJSON(pdf_name,"lecture",lecture)
+    #     print("generating audio")
+    #     audioPath = self.audioGenerator.textToAudio(lecture,pdf_name)
+    #     print("HTML friendly lecture")
+    #     lecture = self.texthandler(lecture)
+    #     print("lecture:",lecture)
+    #     return lecture
     
     def summarizePDFOllama(self,pdfName):
         # savedsum = self.fileHandler.loadJSON(pdfName,"lecture")
@@ -201,7 +213,7 @@ class chatHandlerClass:
                     text += page.extract_text()
             return text
         retrieval_results = extract_text_from_pdf(pdfPath)
-        response = ollama.chat(model='llava:13b', messages=[
+        response = ollama.chat(model='llama3.1:70b', messages=[
             {
                 'role': 'user',
                 'content': f'context:{retrieval_results} prompt:{prompt}',
@@ -214,6 +226,7 @@ class chatHandlerClass:
         audioPath = self.audioGenerator.textToAudio(lecture,pdfName)
         print("HTML friendly lecture")
         lecture = self.texthandler(lecture)
+        # self.updateConversation(self,conversation,userMessage,responseMessage)
         return lecture
     
     def texthandler(self,text):
