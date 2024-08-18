@@ -37,8 +37,8 @@ class chatHandlerClass:
         self.model = OllamaLLM(base_url= "http://ollama:11434", model="llama3.1:70b")
         # self.model = OllamaLLM(model="llama3.1:70b")
         # self.chatAgent = agent('llama3.1:70b', tools,self.RAG)
-        template = """You are a senior researcher tasked with answering the following question {question}. Based on the user's question and any retrieved content, provide an answer and list any topics or questions that require further research, Use only the context provided, not your own knowledge. Make sure you list topics if the context doesnt show relevant information.
-            Provide a detailed answer to the user's question based on the given context:{context}. Make sure you use the context for relevant information and not make your own.
+        template = """You are a senior researcher tasked withhaveing a conversation and answering the following question {question}. Based on the user's question and any retrieved content, provide an answer and list any topics or questions that require further research, Use only the context provided, not your own knowledge. Make sure you list topics if the context doesnt show relevant information.
+            Provide a detailed answer to the user's question based on the given context:{context}. YOu conversation history is {history} Make sure you use the context for relevant information and not make your own.
             Try highlighting important parts of the answer using html <b></b> and leaving a line after every paragraph. Make the answer as detailed as possible based on the context.
         """
         prompt = ChatPromptTemplate.from_template(template)
@@ -57,13 +57,6 @@ class chatHandlerClass:
     def save_conversations(self,conversations):
         self.fileHandler.save_conversations(conversations)
 
-    def load_conversations(self, username = None):
-        DATA_FILE = self.getChatFilePath(username)
-        if os.path.exists(DATA_FILE):
-            with open(DATA_FILE, 'r') as file:
-                return json.load(file)
-        return []
-    
     def process_message_with_images(self,message):
         def replace_image(match):
             img_path = match.group(1)
@@ -77,13 +70,13 @@ class chatHandlerClass:
         processed_message = re.sub(r'<img src=\'(.*?)\'></img>', replace_image, message)
         return processed_message
 
-    def GetResponse(self,user_message):
+    def GetResponse(self,user_message,history = ''):
         # response_actions = self.chatAgent(user_message)
         # response_message = self.chatAgent.getText()
         # retrieved_images = self.chatAgent.retrieved_images
         
         retrieved_text = self.RAG.query(user_message)
-        response_message = self.chain.invoke({"context":retrieved_text,"question": "What is LangChain?"})
+        response_message = self.chain.invoke({"context":retrieved_text,"question": response_message,"history":history})
         self.agentTools.answerUser(response_message,user_message)
         response_actions = self.agentTools.returnActions()
         print('actions:',response_actions)
@@ -93,7 +86,8 @@ class chatHandlerClass:
         conversations = self.fileHandler.load_conversations()
         for conversation in conversations:
             if conversation['id'] == conversation_id:
-                response_actions,response_message = self.GetResponse(user_message)
+                history = conversation["messages"]
+                response_actions,response_message = self.GetResponse(user_message,history)
                 print("response_message:",response_message)
                 processed_message = self.process_message_with_images(response_message)
                 self.updateConversation(conversation,user_message,processed_message)
@@ -192,14 +186,30 @@ class chatHandlerClass:
     #     return lecture
     
     def summarizePDFOllama(self,pdfName):
-        # savedsum = self.fileHandler.loadJSON(pdfName,"lecture")
-        # if(savedsum !=[]):
-        #     lecture = self.texthandler(savedsum)
-        #     return lecture
+        savedsum = self.fileHandler.loadJSON(pdfName,"lecture")
+        print(savedsum)
+        if(savedsum !=[]):
+            lecture = self.texthandler(savedsum)
+            return lecture
 
         print("generating content")
         pdfPath = os.path.join(self.fileHandler.pdfPath,pdfName)
-        prompt = """Provide the summary of the entire research paper, add introduction, conclusion , citations etc each topic seperated into paragraphs.Remember to bold the headings like <b>Introduction</b>Dont use markdown system and seperate paragraphs using '\n' instead of <br>. to bold or other highlights use html system like <b></b>. Use upper case letter only for the first letter of the word if needed, the entire word should not be made up of upper case letters. """
+        prompt = """Prompt for LLaMA-70B:
+
+            Generate a comprehensive summary of the research paper provided. The summary should be organized into clearly defined sections with the following headings:
+
+            <b>Introduction</b>: Begin with an introduction that provides an overview of the research topic, the main objectives of the study, and the significance of the research. Include relevant background information to set the context.
+
+            <b>Main Findings</b>: Summarize the key findings of the research. Describe the most important results and discoveries made in the study. Highlight any novel insights or contributions to the field.
+
+            <b>Methodology</b>: Provide a brief overview of the methods and approaches used in the research. Discuss the experimental design, data collection, and analysis techniques. Mention any tools, frameworks, or models utilized.
+
+            <b>Discussion</b>: Interpret the findings in the context of existing research. Discuss the implications of the results, their relevance to the field, and any potential applications. Address any limitations of the study and suggest areas for future research.
+
+            <b>Conclusion</b>: Conclude with a summary of the overall contributions of the research. Reinforce the significance of the findings and their impact on the field. Offer final thoughts on the study’s broader implications.
+
+            Citations: Where necessary, include references to key studies or previous research that support or contrast with the findings of the paper. Ensure citations are mentioned within the relevant sections.
+        """
 
 
         def extract_text_from_pdf(pdf_path):
@@ -210,7 +220,7 @@ class chatHandlerClass:
                     text += page.extract_text()
             return text
         retrieval_results = extract_text_from_pdf(pdfPath)
-        lecture = self.chain.invoke({"context":retrieval_results,"question": prompt})
+        lecture = self.chain.invoke({"context":retrieval_results,"question": prompt,'history':''})
         print(lecture)
         self.fileHandler.updateJSON(pdfName,"lecture",lecture)
         print("generating audio")

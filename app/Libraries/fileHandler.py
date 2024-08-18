@@ -26,14 +26,18 @@ class handler:
         if(name[-4:]==".pdf"):
             name = Path(name).stem
         filePath = os.path.join(self.logPath,name+".json")
+
+        if(os.path.exists(filePath)):
+            with open(filePath, 'r') as file:
+                fileData = json.load(file)
+        else:
+            fileData = {}
+
         with open(filePath, 'w+') as file:
-            try:
-                filedata = json.load(file)
-                filedata[title] = data
-                json.dump(fileData, file, indent=4) 
-            except:
-                fileData = {title:data}
-                json.dump(fileData, file, indent=4) 
+            fileData[title] = data
+            print("_"*50)
+            print("dumping",fileData)
+            json.dump(fileData, file, indent=4) 
             
         
         
@@ -46,10 +50,13 @@ class handler:
             return []
         else:
             with open(filePath, 'r') as file:
-                filedata = json.load(file)
-                if(title in filedata.keys()):
-                    return filedata[title]
-                else:
+                try:
+                    filedata = json.load(file)
+                    if(title in filedata.keys()):
+                        return filedata[title]
+                    else:
+                        return []
+                except:
                     return []
             
     def videoFileExists(self,fileName):
