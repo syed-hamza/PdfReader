@@ -2,7 +2,7 @@
 
 
 class agentTools:
-    def __init__(self,agent):
+    def __init__(self,agent = None):
         self.actions = []
         self.agent = agent
         self.answer = ""

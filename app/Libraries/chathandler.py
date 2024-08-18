@@ -3,7 +3,6 @@ import json
 from flask import jsonify
 import base64
 import re
-import openai
 import requests
 import ollama
 import PyPDF2
@@ -14,7 +13,8 @@ from Libraries.fileHandler import handler
 from Libraries.chromaRAGHandler import RAGHandler
 from Libraries.audioGenerator import gttsconverter
 from Libraries.langchainWebTools import agentTools
-
+from langchain_ollama.llms import OllamaLLM
+from langchain_core.prompts import ChatPromptTemplate
 
 # file_path = './static/secretKey.json'
 # try:
@@ -33,13 +33,21 @@ class chatHandlerClass:
         self.tools = tools
         self.RAG = RAGHandler()
         self.transcriber = whisperTranscriber()
-        self.fileHandler = handler(self.RAG)    
-        self.chatAgent = agent('llama3.1:70b', tools,self.RAG)
-        self.agentTools = agentTools(self.chatAgent)
+        self.fileHandler = handler(self.RAG)
+        self.model = OllamaLLM(base_url= "http://ollama:11434", model="llama3.1:70b")
+        # self.model = OllamaLLM(model="llama3.1:70b")
+        # self.chatAgent = agent('llama3.1:70b', tools,self.RAG)
+        template = """You are a senior researcher tasked with answering the following question {question}. Based on the user's question and any retrieved content, provide an answer and list any topics or questions that require further research, Use only the context provided, not your own knowledge. Make sure you list topics if the context doesnt show relevant information.
+            Provide a detailed answer to the user's question based on the given context:{context}. Make sure you use the context for relevant information and not make your own.
+            Try highlighting important parts of the answer using html <b></b> and leaving a line after every paragraph. Make the answer as detailed as possible based on the context.
+        """
+        prompt = ChatPromptTemplate.from_template(template)
+        self.chain = prompt | self.model
+
+        self.agentTools = agentTools()
         # self.texthandler = texthandler()
         self.audioGenerator = gttsconverter(self.fileHandler,speed=1.25)
-        pass
-
+ 
     def load_conversations(self,username = None):
         return self.fileHandler.load_conversations()
 
@@ -73,20 +81,9 @@ class chatHandlerClass:
         # response_actions = self.chatAgent(user_message)
         # response_message = self.chatAgent.getText()
         # retrieved_images = self.chatAgent.retrieved_images
-        answer_prompt = """You are a senior researcher tasked with answering questions and identifying areas where more information is needed. Based on the user's question and any retrieved content, provide an answer and list any topics or questions that require further research, Use only the context provided, not your own knowledge. Make sure you list topics if the context doesnt show relevant information.
-
-            Your response should be structured as follows:
-            1. Answer: Provide a detailed answer to the user's question based on available information, if the user asks to display any paper put the topic in the requiredinfo. Make sure you use the context for relevant information and not make your own.
-            Try highlighting important parts of the answer using html <b></b> and leaving a line after every paragraph. Make the answer as detailed as possible based on the context.
-        """
+        
         retrieved_text = self.RAG.query(user_message)
-        combined_content = f"context: {retrieved_text}\n"
-        prompt = f"""
-            User Question: {user_message} \n
-            {combined_content}\n
-            instructions: {answer_prompt}
-        """
-        response_message =  ollama.generate(model='llama3.1:70b', prompt=prompt)['response']
+        response_message = self.chain.invoke({"context":retrieved_text,"question": "What is LangChain?"})
         self.agentTools.answerUser(response_message,user_message)
         response_actions = self.agentTools.returnActions()
         print('actions:',response_actions)
@@ -213,13 +210,7 @@ class chatHandlerClass:
                     text += page.extract_text()
             return text
         retrieval_results = extract_text_from_pdf(pdfPath)
-        response = ollama.chat(model='llama3.1:70b', messages=[
-            {
-                'role': 'user',
-                'content': f'context:{retrieval_results} prompt:{prompt}',
-            },
-            ])
-        lecture = response['message']['content']
+        lecture = self.chain.invoke({"context":retrieval_results,"question": prompt})
         print(lecture)
         self.fileHandler.updateJSON(pdfName,"lecture",lecture)
         print("generating audio")
