@@ -10,7 +10,7 @@ import PyPDF2
 from Libraries.transcriber import whisperTranscriber
 from Libraries.graphAgentIndexing import agent
 from Libraries.fileHandler import handler
-from Libraries.chromaRAGHandler import RAGHandler
+from Libraries.chromaRAGHandler2 import RAGHandler
 from Libraries.audioGenerator import gttsconverter
 from Libraries.langchainWebTools import agentTools
 from langchain_ollama.llms import OllamaLLM
@@ -38,7 +38,7 @@ class chatHandlerClass:
         # self.model = OllamaLLM(model="llama3.1:70b")
         # self.chatAgent = agent('llama3.1:70b', tools,self.RAG)
         template = """You are a senior researcher tasked withhaveing a conversation and answering the following question {question}. Based on the user's question and any retrieved content, provide an answer and list any topics or questions that require further research, Use only the context provided, not your own knowledge. Make sure you list topics if the context doesnt show relevant information.
-            Provide a detailed answer to the user's question based on the given context:{context}. YOu conversation history is {history} Make sure you use the context for relevant information and not make your own.
+            Provide a detailed answer to the user's question based on the given context:{context}. Your conversation history is with the user is {history} use only if relevant, do not return to the user. Make sure you use the context for relevant information and not make your own.
             Try highlighting important parts of the answer using html <b></b> and leaving a line after every paragraph. Make the answer as detailed as possible based on the context.
         """
         prompt = ChatPromptTemplate.from_template(template)
@@ -76,7 +76,7 @@ class chatHandlerClass:
         # retrieved_images = self.chatAgent.retrieved_images
         
         retrieved_text = self.RAG.query(user_message)
-        response_message = self.chain.invoke({"context":retrieved_text,"question": response_message,"history":history})
+        response_message = self.chain.invoke({"context":retrieved_text,"question": user_message,"history":history})
         self.agentTools.answerUser(response_message,user_message)
         response_actions = self.agentTools.returnActions()
         print('actions:',response_actions)
