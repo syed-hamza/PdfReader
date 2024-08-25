@@ -1,89 +1,78 @@
-# ArxivQnA
+# IntelliPaper
+$ git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git -b howiejayz/navi_support --depth=1
+$ cd flash-attention
+$ export PYTHON_SITE_PACKAGES=$(python -c 'import site; print(site.getsitepackages()[0])')
+$ FLASH_ATTENTION_INTERNAL_USE_RTN=1 pip install .
+```
+### Install Optimum-AMD for accessing Hugggingface Libraries
+For installing many advanced models from HuggingFace the package Optimum-AMD is very useful:
+[Find out more about these integrations in the documentation](https://huggingface.co/docs/optimum/main/en/amd/amdgpu/overview)!
+```bash
+$ pip install --upgrade-strategy eager optimum[amd]      
+``` 
 
-ArxivQnA is a tool designed to help you search for and retrieve research papers from Arxiv using natural language queries. The tool leverages the OpenAI API to process your queries and fetch relevant papers. Please note that this tool is still under development, and you may experience errors or slow responses. Slow responses could also be due to the Arxiv API taking its time to process requests.
+After installing PyTorch, FT2(optional), and Optimum-AMD, the system will be ready to deploy advanced models through HuggingFace and the package Ollama.  
+       
+### Installing Ollama:
+Ollama interface can deploy  many LLMs to use in systems with AMD GPUs. The installation of Ollama can be done by running a single command: 
+```bash
+$ curl -fsSL https://ollama.com/install.sh | sh
+```
+The details of Ollama installation and the list of LLMs that can be deployed are given in the link [Ollama](https://github.com/ollama/ollama/tree/main)
+       
+For our work, we deployed the following models: Llama3.1 70B, Azure Phi3 medium(14B), 
+The model llama3.1 (70B) is deployed in the system using the following command:
+```bash       
+$ ollama run llama3.1:70b
+```
 
-## TODO
+### Installing Whisper (medium size)
+For installing the Speech-to-Text model Whisper model in ROCm6.1 we followed the instructions [ROCm Whisper]( https://rocm.blogs.amd.com/artificial-intelligence/whisper/README.html)
 
-- Prompt template
-- conversational buffer(lllm for software)
-- better retreival research
+## Deploying IntelliPaper  
 
-## Features
-
-- Query research papers from Arxiv using natural language.
-- Retrieve relevant papers based on your query.
-
-## Prerequisites
-
-- Python 3.x
-- OpenAI API Key
-
-## Installation
-
-1. Clone this repository:
-
+### Installing in local directory
+1. Clone this repository
     ```bash
-    git clone https://github.com/yourusername/ArxivQnA.git
-    cd ArxivQnA
+    git clone https://github.com:syed-hamza/PdfReader.git
+    cd PdfReader
     ```
-
-2. Install the required Python packages:
-
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-3. Set up your OpenAI API key by either:
-
-    1. Creating a `secretKey.json` file under the `scripts` directory and add the following data:
-
-        ```json
-        {
-            "OpenAI": "Your Key"
-        }
-        ```
-
-    2. Updating the code under `app/Libraries/graphAgentIndexing.py` to:
-
-        ```python
-        OPENAI_API_TOKEN = "YOUR_OPENAI_KEY"
-        os.environ["OPENAI_API_KEY"] = OPENAI_API_TOKEN
-        ```
-
-## Usage
-
-1. Navigate to the `app` directory:
-
+2. Install the required Python packages
     ```bash
     cd app
+    pip install -r requirements.txt
     ```
-
-2. Run the application:
-
+3. Run the application
     ```bash
     python ./app.py
     ```
+4. Launch the IntelliPaper dashboard
+   http://127.1.1.0:5000
 
-3. Follow the on-screen instructions to query and retrieve research papers from Arxiv.
+### Installing through Docker
+IntelliPaper build can be done through Docker using the command
+$ docker build -t pdfr .
 
-## Notes
+The docker build command will create a container with PyTorch, Optimum-AMD, and IntelliApp code. 
+The command to run the container is
+$ docker run -p 5000:5000 --network="host" -it pdfr
 
-- Make sure your OpenAI API key is valid and has sufficient credits to run the queries.
-- The tool is still under development, so you might encounter some bugs or slow responses.
+## IntelliPaper User guide
+IntelliPaper dashboard has three panels:
+1) Left side panel is uploading a research paper,
+2) Middle panel is for viewing the paper summary,
+3) Right panel is for browsing the pdf version of the research paper.
+
+Generate Summary button generates the summary of the entire research paper using the Llama 3.1 (70B) model deployed in Ollama framework. The generated Summary is presented in the middle panel. The Audio button presents the narrative of the research paper summary. The yellow marker moves to show the location of the text in the speech.
+The middle panel also has a QnA chatbot interface. Here users can ask questions regarding the uploaded research paper. For example, user can query "What is Flash Attention 2?". This chat interface is also can be operated using voice comand. 
+
 
 ## Contributing
-
-We welcome contributions to improve ArxivQnA. If you have any suggestions or find any issues, please create an issue or submit a pull request.
+If you have any suggestions or find any issues, please create an issue or submit a pull request.
 
 ## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](Licence) file for details.
 
 ## Acknowledgements
-
-- [Arxiv API](https://arxiv.org/help/api/index)
-- [OpenAI API](https://beta.openai.com/docs/)
-
----
 
 Feel free to reach out if you have any questions or need further assistance!

@@ -9,6 +9,6 @@ app/temp/*
 app/static/results/*
 app/static/Retrievedimages/*
 app/static/Audio/*
-testEnv/*
+app/test/*
 app/Libraries/VideoGen/gfpgan/*
 app/Libraries/VideoGen/checkpoints/*

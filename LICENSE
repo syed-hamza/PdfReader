@@ -1,0 +1,64 @@
+MIT License
+
+Copyright (c) [2024] [Syed Hamza Hussain (hamza11223300@gmail.com]
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+1. The above copyright notice and this permission notice shall be included in all
+   copies or substantial portions of the Software.
+
+2. Any modifications to the Software, including but not limited to modifications,
+   alterations, enhancements, or derivative works, must be clearly indicated as such
+   and must retain the original copyright notice and this permission notice in
+   any distributions or significant portions of the modified Software.
+
+3. The Software is provided "AS IS", without warranty of any kind, express or
+   implied, including but not limited to the warranties of merchantability,
+   fitness for a particular purpose, and non-infringement. In no event shall the
+   authors or copyright holders be liable for any claim, damages, or other
+   liability, whether in an action of contract, tort, or otherwise, arising from,
+   out of, or in connection with the Software or the use or other dealings in the
+   Software.
+
+4. In the context of this Software, "AI software" refers to any component,
+   module, or service that is designed to simulate, enhance, or otherwise replicate
+   human cognitive functions, including but not limited to machine learning models,
+   neural networks, natural language processing algorithms, or any other technique
+   that falls within the scope of artificial intelligence.
+
+5. The Software is intended for use in research, development, and production
+   environments. Users are encouraged to evaluate the suitability of the Software
+   for their use cases and to perform appropriate testing and validation before
+   deployment.
+
+6. Users are advised that AI software, by its nature, may produce unpredictable,
+   unexpected, or incorrect results. The authors do not guarantee the accuracy,
+   reliability, or suitability of the Software for any particular purpose, and the
+   user assumes all risks associated with its use.
+
+7. Any feedback, contributions, or improvements made to the Software are welcome
+   and may be incorporated into future versions of the Software. By providing such
+   contributions, you agree that they are provided under the same license terms as
+   the original Software.
+
+8. If the Software includes or is combined with any third-party libraries, frameworks,
+   or tools, the respective licenses of those third-party components shall apply in
+   addition to this license. It is the user's responsibility to review and comply with
+   those licenses.
+
+9. The authors reserve the right to update this license at any time. Any such updates
+   will be documented in the Software's repository, and users are encouraged to review
+   the latest version of the license before using the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
