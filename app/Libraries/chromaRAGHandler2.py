@@ -36,7 +36,6 @@ class RAGHandler:
         self.index = None
         self.embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
         self.vector_store = Chroma(embedding_function=self.embedding_model) 
-        self.indexAllpdf()
         store = InMemoryStore()  # <- Can we extend this to images
         id_key = "doc_id"
         self.retriever = MultiVectorRetriever(
@@ -45,6 +44,10 @@ class RAGHandler:
             id_key=id_key,
         )
         self.llavallm = OllamaLLM(model="llava:latest")
+        self.fileHandler = None
+        self.pdfData = {}
+        self.indexAllpdf()
+        
 
     def download_pdf(self, url):
         print(f"Downloading PDF from {url}")
@@ -94,13 +97,7 @@ class RAGHandler:
         documents = []
         for filename in os.listdir(self.pdfDir):
             if filename.endswith(".pdf"):
-                loader = PyPDFLoader(os.path.join(self.pdfDir, filename))
-                documents.extend(loader.load())
-
-        # Split documents into chunks
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-        texts = text_splitter.split_documents(documents)
-        self.vector_store.add_documents(texts)
+                self.indexpdf(os.path.join(self.pdfDir,filename))
 
     def getImgSummaries(self,path):
         cleaned_img_summary = []
@@ -129,12 +126,12 @@ class RAGHandler:
         img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
         return img_str
     
-    def indexpdf(self,pdfName):
+    def indexpdf(self,pdfPath):
         id_key = "doc_id"
-        pdfBaseName = Path(pdfName).stem
+        pdfBaseName = Path(pdfPath).stem
         imageDir = os.path.join(self.output_dir,pdfBaseName)
         raw_pdf_elements = partition_pdf(
-            filename=pdfName,
+            filename=pdfPath,
             extract_images_in_pdf=True,
             infer_table_structure=True,
             chunking_strategy="by_title",
@@ -164,6 +161,21 @@ class RAGHandler:
         self.retriever.docstore.mset(
             list(zip(img_ids, cleaned_img_summary))
         )
+        pdfData = [str(data) for data in raw_pdf_elements]
+        # pdfData.append("Image Summaries:\n") 
+        # pdfData.extend(cleaned_img_summary) 
+        strPdfData = "./".join(pdfData)
+        self.pdfData[pdfBaseName] = pdfData
+        
+
+    def getAllPdfText(self,pdfName):
+        pdfName = Path(pdfName).stem
+        if pdfName in self.pdfData.keys():
+            return self.pdfData[pdfName]
+        else:
+            path = os.path.join(self.pdfDir,pdfName+".pdf")
+            self.indexpdf(path)
+            return self.pdfData[pdfName]
 
     def query(self, query):
         retrieval_results=self.retriever.invoke(query)
@@ -191,3 +203,6 @@ class RAGHandler:
     def postProcess(self,filePath):
         # self.pdf_to_images(filePath)
         self.indexpdf(filePath)
+
+    def setFileHandler(self,fileHandler):
+        self.fileHandler = fileHandler

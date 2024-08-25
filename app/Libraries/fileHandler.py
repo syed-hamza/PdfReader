@@ -11,6 +11,7 @@ import json
 class handler:
     def __init__(self,RAG):
         self.RAG = RAG
+        self.RAG.setFileHandler(self)
         self.UploadFolder = 'uploads'
         self.dataFile = 'data/chats.json'
         self.pdfPath = 'papers/'

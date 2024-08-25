@@ -187,14 +187,14 @@ class chatHandlerClass:
     
     def summarizePDFOllama(self,pdfName):
         savedsum = self.fileHandler.loadJSON(pdfName,"lecture")
-        print(savedsum)
-        if(savedsum !=[]):
-            lecture = self.texthandler(savedsum)
-            return lecture
+        # print(savedsum)
+        # if(savedsum !=[]):
+        #     lecture = self.texthandler(savedsum)
+        #     return lecture
 
         print("generating content")
         pdfPath = os.path.join(self.fileHandler.pdfPath,pdfName)
-        prompt = """Prompt for LLaMA-70B:
+        prompt = """
 
             Generate a comprehensive summary of the research paper provided. The summary should be organized into clearly defined sections with the following headings:
 
@@ -206,20 +206,14 @@ class chatHandlerClass:
 
             <b>Discussion</b>: Interpret the findings in the context of existing research. Discuss the implications of the results, their relevance to the field, and any potential applications. Address any limitations of the study and suggest areas for future research.
 
-            <b>Conclusion</b>: Conclude with a summary of the overall contributions of the research. Reinforce the significance of the findings and their impact on the field. Offer final thoughts on the study’s broader implications.
+            <b>Conclusion</b>: Conclude with a summary of the overall contributions of the research. Reinforce the significance of the findings and their impact on the field. Offer final thoughts on the study's broader implications.
 
-            Citations: Where necessary, include references to key studies or previous research that support or contrast with the findings of the paper. Ensure citations are mentioned within the relevant sections.
+            Citations: Where necessary, include references to key studies or previous research that support or contrast with the findings of the paper. Ensure citations are mentioned within the relevant sections. You are given image summaries but do not focus on them, you can just mention them.
         """
 
 
-        def extract_text_from_pdf(pdf_path):
-            text = ""
-            with open(pdf_path, "rb") as file:
-                reader = PyPDF2.PdfReader(file)
-                for page in reader.pages:
-                    text += page.extract_text()
-            return text
-        retrieval_results = extract_text_from_pdf(pdfPath)
+        retrieval_results = self.RAG.getAllPdfText(pdfName)
+        print(retrieval_results)
         lecture = self.chain.invoke({"context":retrieval_results,"question": prompt,'history':''})
         print(lecture)
         self.fileHandler.updateJSON(pdfName,"lecture",lecture)
