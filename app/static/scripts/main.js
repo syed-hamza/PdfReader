@@ -214,22 +214,24 @@ function setupPDFUpload() {
     });
 }
 
-function uploadPDF(file) {
+async function uploadPDF(file) {
     const formData = new FormData();
     formData.append('pdf', file);
-
-    fetch('/upload-pdf', {
+    showprogress("Uploading Research Papers", type = "normal")
+    await fetch('/upload-pdf', {
         method: 'POST',
         body: formData
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('PDF uploaded successfully!');
+            hideprogress("Upload Succesful")
             fetchElements();
+            loadPDF(data["fileName"])
         } else {
-            alert('Failed to upload PDF.');
+            hideprogress('Failed to upload PDF.', type="error")
         }
+
     })
     .catch(error => console.error('Error uploading PDF:', error));
 }

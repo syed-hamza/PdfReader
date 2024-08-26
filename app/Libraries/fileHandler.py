@@ -11,7 +11,6 @@ import json
 class handler:
     def __init__(self,RAG):
         self.RAG = RAG
-        self.RAG.setFileHandler(self)
         self.UploadFolder = 'uploads'
         self.dataFile = 'data/chats.json'
         self.pdfPath = 'papers/'
@@ -22,6 +21,7 @@ class handler:
         self.videoPath = './static/results/'
         self.SeperateImgDir = "./static/Retrievedimages/"
         self.confirmDir([self.pdfPath,self.audioPath,self.UploadFolder,self.logPath,self.tempPath,self.videoPath,self.SeperateImgDir])
+        self.RAG.setFileHandler(self)
         
     def updateJSON(self,name,title,data):
         if(name[-4:]==".pdf"):
@@ -92,7 +92,7 @@ class handler:
         filepath = os.path.join(self.pdfPath, filename)
         file.save(filepath)
         self.RAG.postProcess(filepath)
-        return filepath
+        return filename
     
     def GetPdfNames(self):
         return list(os.listdir(self.pdfPath))

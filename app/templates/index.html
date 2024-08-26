@@ -12,7 +12,12 @@
     <link rel="stylesheet" href="./static/styles/loaders.css">
 </head>
 <body class="flex">
-    <div class="w-1/5 bg-gray-200 p-4 column flex flex-col">
+    <div id="alert-container" class="fixed top-2 left-1/2 transform -translate-x-1/2 z-10 display-none">
+        <div id="alert-box" class="w-64 p-4 bg-green-500 text-white rounded shadow-lg" style="transform: translateY(-100%); opacity: 0;">
+            <strong id="alert-message"></strong> 
+        </div>
+      </div>
+    <div class="w-1/5 bg-gray-200 p-4 column flex flex-col z-1">
         <div class="h-1/2 mt-4" id=  "bottomBar">
             <h2 class="text-lg font-semibold mb-4">Select Element</h2>
             <select id="element-select" class="w-full p-2 border rounded">

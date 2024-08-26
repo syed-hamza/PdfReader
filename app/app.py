@@ -71,8 +71,8 @@ def upload_pdf():
     if file.filename == '':
         return jsonify({'success': False, 'message': 'No selected file'})
     if file and file.filename.endswith('.pdf'):
-        chatHandler.uploadPDF(file)
-        return jsonify({'success': True, 'message': 'File uploaded successfully'})
+        fileName = chatHandler.uploadPDF(file)
+        return jsonify({'success': True, 'message': 'File uploaded successfully', 'fileName':fileName})
     
     return jsonify({'success': False, 'message': 'Invalid file type'})
 

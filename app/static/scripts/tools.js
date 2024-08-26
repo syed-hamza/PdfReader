@@ -102,3 +102,80 @@ function loadPDF(pdfName) {
         })
         .catch(error => console.error('Error:', error));
 }
+
+function displayAlert(message, type = "normal") {
+    var alertBox = document.getElementById('alert-box');
+    var alertMessage = document.getElementById('alert-message');
+  
+    // Set the message
+    alertMessage.innerText = message;
+  
+    // Set the background color based on the type
+    if (type === 'normal') {
+        alertBox.classList.remove('bg-yellow-500');
+        alertBox.classList.remove('bg-red-500');
+        alertBox.classList.add('bg-green-500');
+    } else if (type === 'danger') {
+        alertBox.classList.remove('bg-green-500');
+        alertBox.classList.remove('bg-red-500');
+        alertBox.classList.add('bg-yellow-500');
+    }else if (type === 'error') {
+        alertBox.classList.remove('bg-yellow-500');
+        alertBox.classList.remove('bg-green-500');
+        alertBox.classList.add('bg-red-500');
+    }
+  
+    // Show the alert box
+    alertBox.style.transform = 'translateY(0)';
+    alertBox.style.opacity = '1';
+  
+    // Hide the alert box after 1400ms
+    setTimeout(function() {
+        alertBox.style.transform = 'translateY(-100%)';
+        alertBox.style.opacity = '0';
+    }, 1400);
+  }
+
+
+function showprogress(message, type = "normal") {
+    var alertBox = document.getElementById('alert-box');
+    var alertMessage = document.getElementById('alert-message');
+  
+    // Set the message
+    alertMessage.innerHTML = message;
+  
+    // Set the background color based on the type
+    if (type === 'normal') {
+        alertBox.classList.remove('bg-yellow-500');
+        alertBox.classList.remove('bg-red-500');
+        alertBox.classList.add('bg-green-500');
+    } else if (type === 'danger') {
+        alertBox.classList.remove('bg-green-500');
+        alertBox.classList.remove('bg-red-500');
+        alertBox.classList.add('bg-yellow-500');
+    }else if (type === 'error') {
+        alertBox.classList.remove('bg-yellow-500');
+        alertBox.classList.remove('bg-green-500');
+        alertBox.classList.add('bg-red-500');
+    }
+  
+    // Show the alert box
+    alertBox.style.transform = 'translateY(0)';
+    alertBox.style.opacity = '1';
+  }
+
+
+
+
+  function hideprogress(Message = null) {
+    if(Message != null){
+        displayAlert(Message, type = "normal")
+    }
+    else{
+        var alertBox = document.getElementById('alert-box');
+        setTimeout(function() {
+            alertBox.style.transform = 'translateY(-100%)';
+            alertBox.style.opacity = '0';
+        }, 10);
+    }
+  }

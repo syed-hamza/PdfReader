@@ -135,7 +135,8 @@ class chatHandlerClass:
         return self.fileHandler.GetPdfNames()
     
     def uploadPDF(self,file):    
-        filepath = self.fileHandler.savePdf(file)
+        fileName = self.fileHandler.savePdf(file)
+        return fileName
 
     def sendPDF(self,filePath):
         return self.fileHandler.sendPDF(filePath)

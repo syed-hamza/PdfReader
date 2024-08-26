@@ -35,7 +35,8 @@ class RAGHandler:
         self.pdfDir = './papers/'
         self.index = None
         self.embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        self.vector_store = Chroma(embedding_function=self.embedding_model) 
+        self.vector_store = Chroma(embedding_function=self.embedding_model,
+    persist_directory="./chroma_store/") 
         store = InMemoryStore()  # <- Can we extend this to images
         id_key = "doc_id"
         self.retriever = MultiVectorRetriever(
@@ -44,9 +45,7 @@ class RAGHandler:
             id_key=id_key,
         )
         self.llavallm = OllamaLLM(model="llava:latest")
-        self.fileHandler = None
         self.pdfData = {}
-        self.indexAllpdf()
         
 
     def download_pdf(self, url):
@@ -97,7 +96,12 @@ class RAGHandler:
         documents = []
         for filename in os.listdir(self.pdfDir):
             if filename.endswith(".pdf"):
-                self.indexpdf(os.path.join(self.pdfDir,filename))
+                saved = self.fileHandler.loadJSON(filename,"retreivedData")
+                print("saved:",saved)
+                if saved==[]:
+                    data = self.indexpdf(os.path.join(self.pdfDir,filename))
+                    saved = self.fileHandler.updateJSON(filename,"retreivedData",data)
+                
 
     def getImgSummaries(self,path):
         cleaned_img_summary = []
@@ -107,9 +111,8 @@ class RAGHandler:
             presc_file_path =presc_img_path+filename
             img_path = os.path.join(presc_img_path, filename) 
             basename = Path(filename).stem
-            output_path = os.path.join(presc_img_path, basename+".txt")
             if os.path.isfile(img_path):
-                print("Img= {} output text= {}".format(img_path, output_path))
+                print("Img= {}".format(img_path))
                 pil_image = Image.open(img_path)
                 image_b64 = self.convert_to_base64(pil_image)
                 llm_with_image_context = self.llavallm.bind(images=[image_b64])
@@ -165,7 +168,8 @@ class RAGHandler:
         # pdfData.append("Image Summaries:\n") 
         # pdfData.extend(cleaned_img_summary) 
         strPdfData = "./".join(pdfData)
-        self.pdfData[pdfBaseName] = pdfData
+        self.pdfData[pdfBaseName] = strPdfData
+        return pdfData
         
 
     def getAllPdfText(self,pdfName):
@@ -179,7 +183,7 @@ class RAGHandler:
 
     def query(self, query):
         retrieval_results=self.retriever.invoke(query)
-        combined_results = "\n\n".join([result for result in retrieval_results]) 
+        combined_results = "\n\n".join([str(result) for result in retrieval_results]) 
         return combined_results
     
     def get_arxiv_pdf_url(self,query):
@@ -206,3 +210,4 @@ class RAGHandler:
 
     def setFileHandler(self,fileHandler):
         self.fileHandler = fileHandler
+        self.indexAllpdf()
