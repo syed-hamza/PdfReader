@@ -1,9 +1,11 @@
 # IntelliPaper
-$ git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git -b howiejayz/navi_support --depth=1
+```bash
+$ git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git -b howiejay/navi_support --depth=1
 $ cd flash-attention
 $ export PYTHON_SITE_PACKAGES=$(python -c 'import site; print(site.getsitepackages()[0])')
 $ FLASH_ATTENTION_INTERNAL_USE_RTN=1 pip install .
 ```
+
 ### Install Optimum-AMD for accessing Hugggingface Libraries
 For installing many advanced models from HuggingFace the package Optimum-AMD is very useful:
 [Find out more about these integrations in the documentation](https://huggingface.co/docs/optimum/main/en/amd/amdgpu/overview)!
