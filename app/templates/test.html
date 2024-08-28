@@ -1,24 +1,14 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="./static/styles/loaders.css">
-    <title>Video Player</title>
+    <title>Image Test</title>
 </head>
 <body>
-
-    <!-- <div class="hypnotic-1"></div> -->
-    <div id = "loader" class="hypnotic-2"></div>
-    <!-- <div class="hypnotic-3"></div>
-    <div class="hypnotic-4"></div>
-    <div class="hypnotic-5"></div>
-    <div class="hypnotic-6"></div>
-    <div class="hypnotic-7"></div>
-    <div class="hypnotic-8"></div>
-    <div class="hypnotic-9"></div>
-    <div class="hypnotic-10"></div> -->
-
+    {% if image_data %}
+        <img src="{{ url_for('test') }}" alt="Retrieved Image">
+    {% else %}
+        <p>No image available</p>
+    {% endif %}
 </body>
-    <script src="./static/scripts/video.js"></script>
 </html>

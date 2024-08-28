@@ -10,7 +10,7 @@ import PyPDF2
 from Libraries.transcriber import whisperTranscriber
 from Libraries.graphAgentIndexing import agent
 from Libraries.fileHandler import handler
-from Libraries.chromaRAGHandler2 import RAGHandler
+from Libraries.RAG.qdrantRAGHandler_CLIP_Image import RAGHandler
 from Libraries.audioGenerator import gttsconverter
 from Libraries.langchainWebTools import agentTools
 from langchain_ollama.llms import OllamaLLM
@@ -34,13 +34,25 @@ class chatHandlerClass:
         self.RAG = RAGHandler()
         self.transcriber = whisperTranscriber()
         self.fileHandler = handler(self.RAG)
+        self.image_data =[]
         self.model = OllamaLLM(base_url= "http://ollama:11434", model="llama3.1:70b")
         # self.model = OllamaLLM(model="llama3.1:70b")
         # self.chatAgent = agent('llama3.1:70b', tools,self.RAG)
-        template = """You are a senior researcher tasked withhaveing a conversation and answering the following question {question}. Based on the user's question and any retrieved content, provide an answer and list any topics or questions that require further research, Use only the context provided, not your own knowledge. Make sure you list topics if the context doesnt show relevant information.
-            Provide a detailed answer to the user's question based on the given context:{context}. Your conversation history is with the user is {history} use only if relevant, do not return to the user. Make sure you use the context for relevant information and not make your own.
-            Try highlighting important parts of the answer using html <b></b> and leaving a line after every paragraph. Make the answer as detailed as possible based on the context.
+        template = """
+            You are a senior researcher tasked with answering the following question: {question}. Your response should be based solely on the provided context and any relevant parts of the conversation history. Do not use any outside knowledge or assumptions.
+
+            Given the context provided: {context}, and the relevant conversation history: {history}, please construct a detailed and well-supported answer. If the context does not contain sufficient information, list any topics or questions that require further research.
+
+            Ensure that you:
+
+            1. Use only the provided context and relevant conversation history.
+            2. Highlight key points in your answer using HTML <b></b> tags.
+            3. Separate paragraphs with a line break.
+            4. Avoid adding notes, disclaimers, or assumptions not supported by the context.
+
+            Your goal is to deliver a comprehensive and contextually accurate answer.
         """
+
         prompt = ChatPromptTemplate.from_template(template)
         self.chain = prompt | self.model
 
@@ -74,12 +86,16 @@ class chatHandlerClass:
         # response_actions = self.chatAgent(user_message)
         # response_message = self.chatAgent.getText()
         # retrieved_images = self.chatAgent.retrieved_images
-        
         retrieved_text = self.RAG.query(user_message)
+        if(isinstance(retrieved_text,dict)):
+            self.image_data = retrieved_text["images"]
+            print("Number of images:",len(self.image_data))
+            retrieved_text = retrieved_text["text"]
+        # print(retrieved_text)
         response_message = self.chain.invoke({"context":retrieved_text,"question": user_message,"history":history})
         self.agentTools.answerUser(response_message,user_message)
         response_actions = self.agentTools.returnActions()
-        print('actions:',response_actions)
+
         return response_actions,response_message#,retrieved_images
     
     def chat(self,conversation_id,user_message):
@@ -88,7 +104,7 @@ class chatHandlerClass:
             if conversation['id'] == conversation_id:
                 history = conversation["messages"]
                 response_actions,response_message = self.GetResponse(user_message,history)
-                print("response_message:",response_message)
+                # print("response_message:",response_message)
                 processed_message = self.process_message_with_images(response_message)
                 self.updateConversation(conversation,user_message,processed_message)
                 self.save_conversations(conversations)
@@ -123,7 +139,7 @@ class chatHandlerClass:
             if conversation['id'] == conversation_id:
                 filepath = self.fileHandler.saveFile(file)
                 user_message = self.transcriber(filepath)
-                print("transcribed: ",user_message)
+                # print("transcribed: ",user_message)
                 response_actions,response_message = self.GetResponse(user_message)
                 self.chat(conversation['id'],user_message)
                 self.updateConversation(conversation,user_message,response_message)
@@ -253,3 +269,8 @@ class chatHandlerClass:
     
     def getAudio(self,pdfname):
         return self.fileHandler.getAudio(pdfname)
+    
+    def getImage(self,num):
+        if num>=len(self.image_data):
+            return None
+        return self.image_data[num]

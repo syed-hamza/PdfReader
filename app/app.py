@@ -1,7 +1,7 @@
-from flask import Flask, request, jsonify, render_template 
+from flask import Flask, request, jsonify, render_template, Response
 import sys 
 import os
-
+import base64
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'Libraries/VideoGen')))
 
 from Libraries.chathandler import chatHandlerClass
@@ -17,9 +17,15 @@ def index():
 def video():
     return render_template('video.html')
 
-@app.route('/test')
-def test():
-    return render_template('test.html')
+@app.route('/test/<int:number>')
+def test(number):
+    image_data = chatHandler.getImage(number)
+    if image_data:
+        # If image data is available, return it as a response
+        return Response(base64.b64decode(image_data), mimetype='image/jpeg')
+    else:
+        # If no image is available, render the template without image data
+        return render_template('index.html', image_data=None)
 
 @app.route('/conversations', methods=['GET'])
 def get_conversations():
@@ -142,4 +148,4 @@ def serve_audio():
 #     app.run(ssl_context=('cert.pem', 'key.pem'),debug=True,use_reloader=False, host="0.0.0.0")
 
 if __name__ == '__main__':
-    app.run(debug=True,use_reloader=False, host="0.0.0.0")
+    app.run(debug=True,use_reloader=False, host="0.0.0.0",port='6969')
