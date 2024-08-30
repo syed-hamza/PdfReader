@@ -1,4 +1,8 @@
-# IntelliPaper
+## IntelliPaper: Virtual Assistant for Research Papers
+
+Quickly gain deep understanding on any subject. Manage thousands of research papers effortlessly with our advanced Q&A
+
+IntelliPaper streamlines the process of exploring academic papers, allowing you to quickly grasp essential insights and gain a deep understanding of any subject. Manage and access thousands of papers effortlessly with our advanced voice enabled Q&A chatbot interface. It integrates seamlessly advanced LLMs on-premise, leveraging the power of AMD Radeon W7900 GPUs to deliver fast, accurate, and insightful responses. Revolutionize your research experience with IntelliPaper where efficiency meets depth.
 ```bash
 $ git clone https://github.com/ROCmSoftwarePlatform/flash-attention.git -b howiejay/navi_support --depth=1
 $ cd flash-attention
