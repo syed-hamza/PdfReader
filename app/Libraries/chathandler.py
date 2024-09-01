@@ -36,8 +36,6 @@ class chatHandlerClass:
         self.fileHandler = handler(self.RAG)
         self.image_data =[]
         self.model = OllamaLLM(base_url= "http://ollama:11434", model="llama3.1:70b")
-        # self.model = OllamaLLM(model="llama3.1:70b")
-        # self.chatAgent = agent('llama3.1:70b', tools,self.RAG)
         template = """
             You are a senior researcher tasked with answering the following question: {question}. Your response should be based solely on the provided context and any relevant parts of the conversation history. Do not use any outside knowledge or assumptions.
 
@@ -91,12 +89,17 @@ class chatHandlerClass:
             self.image_data = retrieved_text["images"]
             print("Number of images:",len(self.image_data))
             retrieved_text = retrieved_text["text"]
-        # print(retrieved_text)
+        print("Context:",retrieved_text)
+        print("_"*100)
         response_message = self.chain.invoke({"context":retrieved_text,"question": user_message,"history":history})
+        if(len(self.image_data)>0):
+            response_message =  response_message
         self.agentTools.answerUser(response_message,user_message)
+        print("Answer:",response_message)
+        print("_"*100)
         response_actions = self.agentTools.returnActions()
 
-        return response_actions,response_message#,retrieved_images
+        return response_actions,response_message
     
     def chat(self,conversation_id,user_message):
         conversations = self.fileHandler.load_conversations()
@@ -104,13 +107,11 @@ class chatHandlerClass:
             if conversation['id'] == conversation_id:
                 history = conversation["messages"]
                 response_actions,response_message = self.GetResponse(user_message,history)
-                # print("response_message:",response_message)
-                processed_message = self.process_message_with_images(response_message)
-                self.updateConversation(conversation,user_message,processed_message)
+                self.updateConversation(conversation,user_message,response_message)
                 self.save_conversations(conversations)
                 response = {
                     'actions': response_actions,
-                    'message': processed_message,
+                    'numImages':len(self.image_data)
                 }
                 # print("actions:\n",response)
                 return jsonify(response)
@@ -204,10 +205,10 @@ class chatHandlerClass:
     
     def summarizePDFOllama(self,pdfName):
         savedsum = self.fileHandler.loadJSON(pdfName,"lecture")
-        # print(savedsum)
-        # if(savedsum !=[]):
-        #     lecture = self.texthandler(savedsum)
-        #     return lecture
+        print(savedsum)
+        if(savedsum !=[]):
+            lecture = self.texthandler(savedsum)
+            return lecture
 
         print("generating content")
         pdfPath = os.path.join(self.fileHandler.pdfPath,pdfName)
@@ -230,20 +231,16 @@ class chatHandlerClass:
 
 
         retrieval_results = self.RAG.getAllPdfText(pdfName)
-        print(retrieval_results)
         lecture = self.chain.invoke({"context":retrieval_results,"question": prompt,'history':''})
-        print(lecture)
         self.fileHandler.updateJSON(pdfName,"lecture",lecture)
         print("generating audio")
         audioPath = self.audioGenerator.textToAudio(lecture,pdfName)
-        print("HTML friendly lecture")
         lecture = self.texthandler(lecture)
         # self.updateConversation(self,conversation,userMessage,responseMessage)
         return lecture
     
     def texthandler(self,text):
         paragraphs = [para.strip() for para in text.split('\n') if para.strip()]
-        print(len(paragraphs))
         html_output = ""
         for i, paragraph in enumerate(paragraphs, 1):
             html_output += f'<div id="paragraph-{i}">{paragraph}</div>\n'
@@ -274,3 +271,9 @@ class chatHandlerClass:
         if num>=len(self.image_data):
             return None
         return self.image_data[num]
+    
+    def getImageHTML(self,num):
+        if num>=len(self.image_data):
+            return None
+        return f"""<img src="{self.image_data[0]}" alt="Retrieved Image"></br>"""
+    

@@ -61,16 +61,34 @@ const sendMessage = () => {
             body: JSON.stringify({ message, conversation_id: currentConversationId })
         })
         .then(response => response.json())
-        .then(data => {
+        .then(async(data)=> {
             if (data.error) {
                 console.error(data.error);
             } else {
-                parseActions(data);
+                if(data.numImages>0){
+                    var imageText = await getimage()
+                    parseActions(data,imageText);
+                }
+                else{
+                    parseActions(data);
+                }
                 messageInput.value = ''
             }
         });
     }
 };
+
+const getimage = async () => {
+    const response = await fetch('/getImage', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+    const data = await response.text();
+    return data;
+}
+
 
 const newChat = () => {
     const messages = document.getElementById('messages');

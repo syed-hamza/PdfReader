@@ -1,19 +1,21 @@
-const parseActions = (data) => {
+const parseActions = (data, imageText = null) => {
     console.log(data);
     const actions = data.actions;
-    const retrievedImages = data.retrieved_images;
 
     actions.forEach(item => {
         const key = Object.keys(item)[0];
         const value = item[key];
         console.log("key:",key)
         console.log("value:",value)
-        console.log("value Response:",value['response'])
         if(key === "newChat"){
             newChat();
         }
         if(key === "addMessage"){
-            addmessage(value['input'],value['response'])
+            let response = value['response']
+            if(imageText != null){
+                response = imageText + response
+            }
+            addmessage(value['input'],response)
         }
         if(key === "display"){
             displayPDF(value);

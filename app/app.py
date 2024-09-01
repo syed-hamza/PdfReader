@@ -39,6 +39,9 @@ def chat():
     conversation_id = request.json.get('conversation_id')
     return chatHandler.chat(conversation_id,user_message)
 
+@app.route('/getImage', methods=['POST'])
+def getImage():
+    return chatHandler.getImageHTML(0)
 
 @app.route('/new_chat', methods=['POST'])
 def new_chat():
