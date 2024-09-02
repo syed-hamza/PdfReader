@@ -19,6 +19,8 @@ import torch
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 from transformers import CLIPProcessor, CLIPModel
 
+import shutil
+
 class RAGHandler:
     def __init__(self):
         self.output_dir = "./static/Retrievedimages/"
@@ -30,10 +32,12 @@ class RAGHandler:
         
         # Use a local directory for Qdrant storage
         self.qdrant_path = "./qdrant_local_storage"
+        shutil.rmtree(self.qdrant_path)
         os.makedirs(self.qdrant_path, exist_ok=True)
         
         self.qdrant_client = QdrantClient(path=self.qdrant_path)
         self.collectionName = "pdfData"
+        self.imageCollectionName = "pdfImageData"
         
         # Check if collection exists, create if it doesn't
         collections = self.qdrant_client.get_collections()
@@ -42,9 +46,14 @@ class RAGHandler:
                 collection_name=self.collectionName,
                 vectors_config=VectorParams(size=512, distance=Distance.COSINE),
             )
+        if self.imageCollectionName not in [c.name for c in collections.collections]:
+            self.qdrant_client.create_collection(
+                collection_name=self.imageCollectionName,
+                vectors_config=VectorParams(size=512, distance=Distance.COSINE),
+            )
         
         self.limit = 10
-        self.llavallm = OllamaLLM(model="llava:latest")
+        # self.llavallm = OllamaLLM(model="llava:latest")
         self.pdfData = {}
 
     def get_clip_embedding(self, text=None, image=None):
@@ -59,10 +68,12 @@ class RAGHandler:
                 image_features = self.clip_model.get_image_features(**inputs)
             return image_features.squeeze().tolist()
 
-    def getClientResult(self, query):
+    def getClientResult(self, query, collection = None):
+        if collection is None:
+            collection = self.collectionName
         query_vector = self.get_clip_embedding(text=query)
         search_result = self.qdrant_client.search(
-            collection_name=self.collectionName,
+            collection_name=collection,
             query_vector=query_vector,
             limit=self.limit
         )
@@ -92,34 +103,55 @@ class RAGHandler:
                     self.indexpdf(os.path.join(self.pdfDir, filename))
                     
 
-    def getImgSummaries(self, path, context):
-        cleaned_img_summary = []
+    def pushImgVectors(self, path,PDFText):
         presc_img_path = path
-        prompt = f"Describe the image of a research paper in detail with respect to the following context from the paper {context}. Be specific about graphs, such as bar plots."
         for filename in os.listdir(presc_img_path):
             img_path = os.path.join(presc_img_path, filename)
             print(f"Img= {img_path}")
             pil_image = Image.open(img_path)
             image_b64 = self.convert_to_base64(pil_image)
-            llm_with_image_context = self.llavallm.bind(images=[image_b64])
-            response = llm_with_image_context.invoke(prompt)
-            cleaned_img_summary.append([response, image_b64])
-        return cleaned_img_summary
+            data = self.getFigureData(PDFText,filename)
+            vector = self.get_clip_embedding(text=image_b64)
+            doc_id = str(uuid.uuid4())
+
+            self.qdrant_client.upsert(
+                collection_name=self.imageCollectionName,
+                points=[models.PointStruct(
+                    id=doc_id,
+                    vector=vector,
+                    payload={
+                        "image_data": img_path,
+                        "text": data
+                    }
+                )]
+            )
+    
+    
+    def getDataFromBase64Image(self, image_b64):
+        data = self.getClientResult(image_b64,collection = self.imageCollectionName)
+        text = []
+        for result in data:
+                text.append(result.payload['text'])
+        return text
+        
+        
+    def getFigureData(self,PDFText,filename):
+        pattern = r'-\d+-(\d+)\.jpg'
+        match = re.search(pattern, filename).group(1)
+        ind = PDFText.find(f"Figure {match}:")
+        if(ind==-1):
+            return -1
+        ind2 = PDFText[ind:].find("\n")
+        return PDFText[ind:ind+ind2]
     
     def getImgData(self, path, PDFText):
         cleaned_img_summary = []
         presc_img_path = path
         for filename in os.listdir(presc_img_path):
             img_path = os.path.join(presc_img_path, filename)
-            pattern = r'-\d+-(\d+)\.jpg'
-            match = re.search(pattern, filename).group(1)
-            ind = PDFText.find(f"Figure {match}:")
-            if(ind==-1):
-                print(f"No data found for image {match}")
-            else:
-                ind2 = PDFText[ind:].find("\n")
-                print(match,PDFText[ind:ind+ind2])
-                cleaned_img_summary.append([PDFText[ind:ind+ind2], img_path])
+            data = self.getFigureData(PDFText,filename)
+            if(data != -1):
+                cleaned_img_summary.append([data, img_path])
         return cleaned_img_summary
 
     def convert_to_base64(self, pil_image):
@@ -156,6 +188,7 @@ class RAGHandler:
         for summary, img in cleaned_img_summary:
             self.pushToStore(summary, img)
         saved = self.fileHandler.updateJSON(pdfPath, "retreivedData", strPdfData)
+        self.pushImgVectors(imageDir,strPdfData)
 
     def query(self, query):
         retrieval_results = self.getClientResult(query)

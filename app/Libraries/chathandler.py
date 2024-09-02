@@ -277,3 +277,5 @@ class chatHandlerClass:
             return None
         return f"""<img src="{self.image_data[0]}" alt="Retrieved Image"></br>"""
     
+    def queryImage(self,base64Img):
+        return self.RAG.getDataFromBase64Image(base64Img)

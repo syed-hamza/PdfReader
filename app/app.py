@@ -147,6 +147,27 @@ def serve_audio():
     pdfName =  request.args.get('pdfName')
     return chatHandler.getAudio(pdfName)
 
+@app.route('/upload-image', methods=['POST'])
+def upload_image():
+    from io import BytesIO
+    from PIL import Image
+    if 'image' not in request.files:
+        return jsonify({'success': False, 'error': 'No image part in the request'}), 400
+
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No selected file'}), 400
+
+    # try:
+    image = Image.open(file.stream)
+    buffered = BytesIO()
+    image.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    data = chatHandler.queryImage(img_str)
+    return jsonify({'success': True, 'data': data, 'base64': img_str}), 200   
+    # except Exception as e:
+    #     return jsonify({'success': False, 'error': str(e)}), 500
+
 # if __name__ == '__main__':
 #     app.run(ssl_context=('cert.pem', 'key.pem'),debug=True,use_reloader=False, host="0.0.0.0")
 

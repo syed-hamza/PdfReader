@@ -314,10 +314,11 @@ function audioTimer() {
     });
 }
 function init() {
-    loadConversations();
+    // loadConversations();
     fetchElements();
     setupPDFUpload();
     audioTimer();
+    setupDropArea();
     const pdfSelect = document.getElementById('element-select');
     localStorage.setItem("pdf",pdfSelect.value)
     console.log(localStorage.getItem("pdf"))

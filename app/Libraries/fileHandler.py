@@ -9,7 +9,7 @@ import base64
 import json
 
 class handler:
-    def __init__(self,RAG):
+    def __init__(self,RAG, clear = True):
         self.RAG = RAG
         self.UploadFolder = 'uploads'
         self.dataFile = 'data/chats.json'
@@ -21,7 +21,30 @@ class handler:
         self.videoPath = './static/results/'
         self.SeperateImgDir = "./static/Retrievedimages/"
         self.confirmDir([self.pdfPath,self.audioPath,self.UploadFolder,self.logPath,self.tempPath,self.videoPath,self.SeperateImgDir])
+        if clear:
+            self.clearDir()
         self.RAG.setFileHandler(self)
+
+    def clearDir(self):
+        # Check if the directory exists
+        dirs = [self.pdfPath ,self.logPath,self.SeperateImgDir,self.tempPath]
+        for directory_path in dirs:
+            if os.path.exists(directory_path):
+                # Iterate over all the files and directories in the directory
+                for filename in os.listdir(directory_path):
+                    file_path = os.path.join(directory_path, filename)
+                    try:
+                        if os.path.isfile(file_path) or os.path.islink(file_path):
+                            os.unlink(file_path)  # Remove the file or link
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path)  # Remove the directory
+                    except Exception as e:
+                        print(f'Failed to delete {file_path}. Reason: {e}')
+            else:
+                print(f'The directory {directory_path} does not exist.')
+        for directory_path in dirs:
+            os.makedirs(directory_path, exist_ok=True)
+            
         
     def updateJSON(self,name,title,data):
         if(name[-4:]==".pdf"):
