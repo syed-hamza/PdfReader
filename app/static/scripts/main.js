@@ -54,6 +54,7 @@ const loadConversation = (conversationId) => {
 const sendMessage = () => {
     const messageInput = document.getElementById('message-input');
     const message = messageInput.value;
+    console.log("sending message")
     if (message.trim() && currentConversationId !== null) {
         fetch('/chat', {
             method: 'POST',
@@ -314,7 +315,7 @@ function audioTimer() {
     });
 }
 function init() {
-    // loadConversations();
+    loadConversations();
     fetchElements();
     setupPDFUpload();
     audioTimer();

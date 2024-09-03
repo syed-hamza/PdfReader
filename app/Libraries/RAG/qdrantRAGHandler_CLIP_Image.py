@@ -1,22 +1,15 @@
 import os
-import requests
-from urllib.parse import unquote
-import arxiv
 import base64
 import re
 from io import BytesIO
 from qdrant_client.http import models
-from typing import Any
 from unstructured.partition.pdf import partition_pdf
 import uuid
-import fitz  # PyMuPDF
 from PIL import Image
 from pathlib import Path
-from langchain_ollama import OllamaLLM
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
 import torch
-from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 from transformers import CLIPProcessor, CLIPModel
 
 import shutil
@@ -32,7 +25,8 @@ class RAGHandler:
         
         # Use a local directory for Qdrant storage
         self.qdrant_path = "./qdrant_local_storage"
-        shutil.rmtree(self.qdrant_path)
+        if(os.path.exists(self.qdrant_path)):
+            shutil.rmtree(self.qdrant_path)
         os.makedirs(self.qdrant_path, exist_ok=True)
         
         self.qdrant_client = QdrantClient(path=self.qdrant_path)
@@ -164,13 +158,14 @@ class RAGHandler:
         pdfBaseName = Path(pdfPath).stem
         imageDir = os.path.join(self.output_dir, pdfBaseName)
         raw_pdf_elements = partition_pdf(
+            # strategy="hi_res",
             filename=pdfPath,
             extract_images_in_pdf=True,
             infer_table_structure=True,
             chunking_strategy="by_title",
-            max_characters=4000,
-            new_after_n_chars=3800,
-            combine_text_under_n_chars=2000,
+            max_characters=600,
+            new_after_n_chars=380,
+            combine_text_under_n_chars=200,
             image_output_dir_path=imageDir,
             extract_image_block_output_dir=imageDir
         )
@@ -191,6 +186,7 @@ class RAGHandler:
         self.pushImgVectors(imageDir,strPdfData)
 
     def query(self, query):
+        print("retreiving query")
         retrieval_results = self.getClientResult(query)
         images = []
         text = []
@@ -199,7 +195,8 @@ class RAGHandler:
                 images.append(result.payload["image_data"])
             else:
                 text.append(result.payload['text'])
-        return {"text": text, "images": images}
+            strtext = "./".join([eval(element)[1] for element in text])
+        return {"text": strtext, "images": images}
 
     def postProcess(self, filePath):
         self.indexpdf(filePath)

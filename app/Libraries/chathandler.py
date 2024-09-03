@@ -39,14 +39,12 @@ class chatHandlerClass:
         template = """
             You are a senior researcher tasked with answering the following question: {question}. Your response should be based solely on the provided context and any relevant parts of the conversation history. Do not use any outside knowledge or assumptions.
 
-            Given the context provided: {context}, and the relevant conversation history: {history}, please construct a detailed and well-supported answer. If the context does not contain sufficient information, list any topics or questions that require further research.
+            Given the context provided: {context}, and the relevant conversation history: {history}, please construct a valid and specific answer. Make sure the answer is well supported and accurate. If the context does not contain sufficient information, list any topics or questions that require further research.
 
             Ensure that you:
 
             1. Use only the provided context and relevant conversation history.
-            2. Highlight key points in your answer using HTML <b></b> tags.
-            3. Separate paragraphs with a line break.
-            4. Avoid adding notes, disclaimers, or assumptions not supported by the context.
+            2. Avoid adding notes, disclaimers, or assumptions not supported by the context.
 
             Your goal is to deliver a comprehensive and contextually accurate answer.
         """
@@ -80,10 +78,7 @@ class chatHandlerClass:
         processed_message = re.sub(r'<img src=\'(.*?)\'></img>', replace_image, message)
         return processed_message
 
-    def GetResponse(self,user_message,history = ''):
-        # response_actions = self.chatAgent(user_message)
-        # response_message = self.chatAgent.getText()
-        # retrieved_images = self.chatAgent.retrieved_images
+    def GetResponse(self,user_message,history = ''):    
         retrieved_text = self.RAG.query(user_message)
         if(isinstance(retrieved_text,dict)):
             self.image_data = retrieved_text["images"]
@@ -105,6 +100,7 @@ class chatHandlerClass:
         conversations = self.fileHandler.load_conversations()
         for conversation in conversations:
             if conversation['id'] == conversation_id:
+                print("chat start")
                 history = conversation["messages"]
                 response_actions,response_message = self.GetResponse(user_message,history)
                 self.updateConversation(conversation,user_message,response_message)
