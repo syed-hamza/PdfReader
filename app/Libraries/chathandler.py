@@ -52,6 +52,28 @@ class chatHandlerClass:
         prompt = ChatPromptTemplate.from_template(template)
         self.chain = prompt | self.model
 
+        lectureTemplate = """
+
+            Research Paper:{paper}
+
+            Generate a comprehensive summary of the research paper provided. The summary should be organized into clearly defined sections by using html format highlights only like <b> with the following headings:
+
+            <b>Introduction</b>: Begin with an introduction that provides an overview of the research topic, the main objectives of the study, and the significance of the research. Include relevant background information to set the context.
+
+            <b>Main Findings</b>: Summarize the key findings of the research. Describe the most important results and discoveries made in the study. Highlight any novel insights or contributions to the field.
+
+            <b>Methodology</b>: Provide a brief overview of the methods and approaches used in the research. Discuss the experimental design, data collection, and analysis techniques. Mention any tools, frameworks, or models utilized.
+
+            <b>Discussion</b>: Interpret the findings in the context of existing research. Discuss the implications of the results, their relevance to the field, and any potential applications. Address any limitations of the study and suggest areas for future research.
+
+            <b>Conclusion</b>: Conclude with a summary of the overall contributions of the research. Reinforce the significance of the findings and their impact on the field. Offer final thoughts on the study's broader implications.
+
+            Citations: Where necessary, include references to key studies or previous research that support or contrast with the findings of the paper. Ensure citations are mentioned within the relevant sections. You are given image summaries but do not focus on them, you can just mention them.
+        """
+        lecturePrompt = ChatPromptTemplate.from_template(lectureTemplate)
+        self.lectureChain = lecturePrompt | self.model
+
+
         self.agentTools = agentTools()
         # self.texthandler = texthandler()
         self.audioGenerator = gttsconverter(self.fileHandler,speed=1.25)
@@ -201,33 +223,17 @@ class chatHandlerClass:
     
     def summarizePDFOllama(self,pdfName):
         savedsum = self.fileHandler.loadJSON(pdfName,"lecture")
-        print(savedsum)
-        if(savedsum !=[]):
-            lecture = self.texthandler(savedsum)
-            return lecture
+        # if(savedsum !=[]):
+        #     lecture = self.texthandler(savedsum)
+        #     return lecture
 
         print("generating content")
         pdfPath = os.path.join(self.fileHandler.pdfPath,pdfName)
-        prompt = """
-
-            Generate a comprehensive summary of the research paper provided. The summary should be organized into clearly defined sections with the following headings:
-
-            <b>Introduction</b>: Begin with an introduction that provides an overview of the research topic, the main objectives of the study, and the significance of the research. Include relevant background information to set the context.
-
-            <b>Main Findings</b>: Summarize the key findings of the research. Describe the most important results and discoveries made in the study. Highlight any novel insights or contributions to the field.
-
-            <b>Methodology</b>: Provide a brief overview of the methods and approaches used in the research. Discuss the experimental design, data collection, and analysis techniques. Mention any tools, frameworks, or models utilized.
-
-            <b>Discussion</b>: Interpret the findings in the context of existing research. Discuss the implications of the results, their relevance to the field, and any potential applications. Address any limitations of the study and suggest areas for future research.
-
-            <b>Conclusion</b>: Conclude with a summary of the overall contributions of the research. Reinforce the significance of the findings and their impact on the field. Offer final thoughts on the study's broader implications.
-
-            Citations: Where necessary, include references to key studies or previous research that support or contrast with the findings of the paper. Ensure citations are mentioned within the relevant sections. You are given image summaries but do not focus on them, you can just mention them.
-        """
+        
 
 
         retrieval_results = self.RAG.getAllPdfText(pdfName)
-        lecture = self.chain.invoke({"context":retrieval_results,"question": prompt,'history':''})
+        lecture = self.lectureChain.invoke({"paper":retrieval_results})
         self.fileHandler.updateJSON(pdfName,"lecture",lecture)
         print("generating audio")
         audioPath = self.audioGenerator.textToAudio(lecture,pdfName)
