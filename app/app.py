@@ -123,7 +123,6 @@ def get_video_path():
     
     pdfName =  request.args.get('pdfName')[:-4]
     video_path = f'/static/results/{pdfName}.mp4'
-    print(os.path.exists(video_path))
     return jsonify({'video_url': video_path})
 
 # @app.route('/update_timestamp', methods=['POST'])

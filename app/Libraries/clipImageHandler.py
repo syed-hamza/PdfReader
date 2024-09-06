@@ -29,7 +29,7 @@ class imageHandler:
                 image = Image.open(image_path) 
                 image_dataset.append(image) 
             except Exception as e:
-                print(f"Error loading image {image_path}: {e}")
+                print(f"[INFO] Error loading image {image_path}: {e}")
         records =[]
         for idx, sample in tqdm(enumerate(image_dataset), total=len(image_dataset)):
             processed_img = self.processor(text=None, images = sample, return_tensors="pt")['pixel_values']
@@ -40,7 +40,6 @@ class imageHandler:
 
         print("[INFO] Uploading data records to data collection...")
         for i in range(5,len(records), 5):
-            print(f"finished {i}")
             self.client.upload_records(
                 collection_name=self.collectionName,
                 records=records[i-5:i],

@@ -115,7 +115,6 @@ class chatHandlerClass:
                     'actions': response_actions,
                     'numImages':len(self.image_data)
                 }
-                # print("actions:\n",response)
                 return jsonify(response)
         
         return jsonify({'error': 'Conversation not found'}), 404
@@ -142,7 +141,6 @@ class chatHandlerClass:
             if conversation['id'] == conversation_id:
                 filepath = self.fileHandler.saveFile(file)
                 user_message = self.transcriber(filepath)
-                # print("transcribed: ",user_message)
                 response_actions,response_message = self.GetResponse(user_message)
                 self.chat(conversation['id'],user_message)
                 self.updateConversation(conversation,user_message,response_message)
@@ -205,7 +203,7 @@ class chatHandlerClass:
         #     lecture = self.texthandler(savedsum)
         #     return lecture
 
-        print("generating content")
+        print("[INFO]: Generating content")
         pdfPath = os.path.join(self.fileHandler.pdfPath,pdfName)
         
 

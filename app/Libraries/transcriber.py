@@ -31,7 +31,6 @@ class whisperTranscriber():
             device=self.device,
         )
     def __call__(self,audioPath):
-        print(audioPath)
         return self.transcribe(audioPath)
     
     def transcribe(self,audio_file):

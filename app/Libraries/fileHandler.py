@@ -39,9 +39,9 @@ class handler:
                         elif os.path.isdir(file_path):
                             shutil.rmtree(file_path)  # Remove the directory
                     except Exception as e:
-                        print(f'Failed to delete {file_path}. Reason: {e}')
+                        print(f'[INFO]: Failed to delete {file_path}. Reason: {e}')
             else:
-                print(f'The directory {directory_path} does not exist.')
+                print(f'[INFO]: The directory {directory_path} does not exist.')
         for directory_path in dirs:
             os.makedirs(directory_path, exist_ok=True)
             
@@ -59,8 +59,6 @@ class handler:
 
         with open(filePath, 'w+') as file:
             fileData[title] = data
-            print("_"*50)
-            print("dumping",fileData)
             json.dump(fileData, file, indent=4) 
             
         
@@ -70,7 +68,7 @@ class handler:
             name = Path(name).stem
         filePath = os.path.join(self.logPath,name+".json")
         if(not os.path.exists(filePath)):
-            print("log file not found for :",filePath)
+            print("[INFO]: Log file not found for :",filePath)
             return []
         else:
             with open(filePath, 'r') as file:
@@ -133,7 +131,6 @@ class handler:
 
     def sendPDF(self,filePath):
         path = os.path.join(self.pdfPath,filePath)
-        print(path)
         return send_file(path, mimetype='application/pdf')
     
     def retreivePDFContent(self,pdfPath):
