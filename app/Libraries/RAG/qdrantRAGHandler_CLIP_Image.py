@@ -11,7 +11,6 @@ from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
 import torch
 from transformers import CLIPProcessor, CLIPModel
-
 import shutil
 
 class RAGHandler:
@@ -47,7 +46,6 @@ class RAGHandler:
             )
         
         self.limit = 10
-        # self.llavallm = OllamaLLM(model="llava:latest")
         self.pdfData = {}
 
     def get_clip_embedding(self, text=None, image=None):

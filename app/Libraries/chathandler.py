@@ -8,7 +8,7 @@ import ollama
 import PyPDF2
 
 from Libraries.transcriber import whisperTranscriber
-from Libraries.graphAgentIndexing import agent
+# from Libraries.graphAgentIndexing import agent
 from Libraries.fileHandler import handler
 from Libraries.RAG.qdrantRAGHandler_CLIP_Image import RAGHandler
 from Libraries.audioGenerator import gttsconverter
@@ -56,19 +56,8 @@ class chatHandlerClass:
 
             Research Paper:{paper}
 
-            Generate a comprehensive summary of the research paper provided. The summary should be organized into clearly defined sections by using html format highlights only like <b> with the following headings:
-
-            <b>Introduction</b>: Begin with an introduction that provides an overview of the research topic, the main objectives of the study, and the significance of the research. Include relevant background information to set the context.
-
-            <b>Main Findings</b>: Summarize the key findings of the research. Describe the most important results and discoveries made in the study. Highlight any novel insights or contributions to the field.
-
-            <b>Methodology</b>: Provide a brief overview of the methods and approaches used in the research. Discuss the experimental design, data collection, and analysis techniques. Mention any tools, frameworks, or models utilized.
-
-            <b>Discussion</b>: Interpret the findings in the context of existing research. Discuss the implications of the results, their relevance to the field, and any potential applications. Address any limitations of the study and suggest areas for future research.
-
-            <b>Conclusion</b>: Conclude with a summary of the overall contributions of the research. Reinforce the significance of the findings and their impact on the field. Offer final thoughts on the study's broader implications.
-
-            Citations: Where necessary, include references to key studies or previous research that support or contrast with the findings of the paper. Ensure citations are mentioned within the relevant sections. You are given image summaries but do not focus on them, you can just mention them.
+            Generate a comprehensive summary of the research paper provided. The summary should be organized into clearly defined sections by using html format highlights only like <b>.
+            include citations to key studies or previous research that support or contrast with the findings of the paper. Ensure citations are mentioned within the relevant sections. Try to summarize the paper in order of the given content to maintain coherence with the paper.
         """
         lecturePrompt = ChatPromptTemplate.from_template(lectureTemplate)
         self.lectureChain = lecturePrompt | self.model
@@ -106,14 +95,10 @@ class chatHandlerClass:
             self.image_data = retrieved_text["images"]
             print("Number of images:",len(self.image_data))
             retrieved_text = retrieved_text["text"]
-        print("Context:",retrieved_text)
-        print("_"*100)
         response_message = self.chain.invoke({"context":retrieved_text,"question": user_message,"history":history})
         if(len(self.image_data)>0):
             response_message =  response_message
         self.agentTools.answerUser(response_message,user_message)
-        print("Answer:",response_message)
-        print("_"*100)
         response_actions = self.agentTools.returnActions()
 
         return response_actions,response_message
@@ -122,7 +107,6 @@ class chatHandlerClass:
         conversations = self.fileHandler.load_conversations()
         for conversation in conversations:
             if conversation['id'] == conversation_id:
-                print("chat start")
                 history = conversation["messages"]
                 response_actions,response_message = self.GetResponse(user_message,history)
                 self.updateConversation(conversation,user_message,response_message)
@@ -178,12 +162,6 @@ class chatHandlerClass:
     
     def videoFileExists(self,fileName):
         return self.fileHandler.videoFileExists(fileName)
-
-    # def toggleArxiv(self):
-    #     return self.chatAgent.toggleArxiv()
-
-    # def isArxivAllowed(self):
-    #     return self.chatAgent.isArxivAllowed()
     
     # def summarizePDF(self,pdf_path): #openai
     #     savedsum = self.fileHandler.loadJSON(pdf_path,"lecture")
@@ -234,8 +212,7 @@ class chatHandlerClass:
 
         retrieval_results = self.RAG.getAllPdfText(pdfName)
         lecture = self.lectureChain.invoke({"paper":retrieval_results})
-        self.fileHandler.updateJSON(pdfName,"lecture",lecture)
-        print("generating audio")
+        self.fileHandler.updateJSON(pdfName,"lecture",lecture)     
         audioPath = self.audioGenerator.textToAudio(lecture,pdfName)
         lecture = self.texthandler(lecture)
         # self.updateConversation(self,conversation,userMessage,responseMessage)
