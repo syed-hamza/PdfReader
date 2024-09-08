@@ -35,16 +35,17 @@ class chatHandlerClass:
         self.transcriber = whisperTranscriber()
         self.fileHandler = handler(self.RAG)
         self.image_data =[]
-        self.model = OllamaLLM(base_url= "http://ollama:11434", model="llama3.1:70b")
+        self.model = OllamaLLM(base_url= "http://ollama:11434", model="phi3-128k:latest")
         template = """
-            You are a senior researcher tasked with answering the following question: {question}. Your response should be based solely on the provided context and any relevant parts of the conversation history. Do not use any outside knowledge or assumptions.
+            You are a senior researcher tasked with answering the following question: {question}. Your response should be based solely on the provided context and any relevant parts of the conversation history. Do not use any outside knowledge or assumptions and do not say if you have a context or history in your response.
 
             Given the context provided: {context}, and the relevant conversation history: {history}, please construct a valid and specific answer. Make sure the answer is well supported and accurate. If the context does not contain sufficient information, list any topics or questions that require further research.
 
             Ensure that you:
 
-            1. Use only the provided context and relevant conversation history.
-            2. Avoid adding notes, disclaimers, or assumptions not supported by the context.
+            1. Avoid adding notes, disclaimers, or assumptions not supported by the context.
+            2. Be very specific about the answer.
+            3. Add supporting tabular data if present in the context only in HTML formal provided to you.
 
             Your goal is to deliver a comprehensive and contextually accurate answer.
         """
@@ -54,9 +55,9 @@ class chatHandlerClass:
 
         lectureTemplate = """
 
-            Research Paper:{paper}
+            Research Paper Text:{paper}
 
-            Generate a comprehensive summary of the research paper provided. The summary should be organized into clearly defined sections by using html format highlights only like <b>.
+            Generate a comprehensive summary of the research paper provided. The summary should be organized into clearly defined sections by using html format highlights only like <b> and not '**'. I want you to summarize the given research papers in a structured fashion.
             include citations to key studies or previous research that support or contrast with the findings of the paper. Ensure citations are mentioned within the relevant sections. Try to summarize the paper in order of the given content to maintain coherence with the paper.
         """
         lecturePrompt = ChatPromptTemplate.from_template(lectureTemplate)
@@ -84,36 +85,44 @@ class chatHandlerClass:
                     encoded_string = base64.b64encode(image_file.read()).decode()
                     return f'<img src="data:image/jpeg;base64,{encoded_string}" alt="Embedded Image">'
             except FileNotFoundError:
-                return f'[Image not found: {img_path}]'
+                return f'Image not found: {img_path}]'
         
         processed_message = re.sub(r'<img src=\'(.*?)\'></img>', replace_image, message)
         return processed_message
 
-    def GetResponse(self,user_message,history = ''):    
-        retrieved_text = self.RAG.query(user_message)
+    def GetResponse(self,user_message,history = '',pdfname = ''):    
+        retrieved_text = self.RAG.query(user_message,pdfname)
         if(isinstance(retrieved_text,dict)):
             self.image_data = retrieved_text["images"]
-            print("Number of images:",len(self.image_data))
+            self.table_Data = retrieved_text["tables"]
+            print("[INFO] Number of tables:",len(self.table_Data))
+            print("[INFO] Images:",self.image_data)
             retrieved_text = retrieved_text["text"]
+            table_text = '\n here are the retrieved tables with their context, show the html format if needed to support your answer:'
+            for n,table in enumerate(self.table_Data):
+                table_text += f"\n{n}: Context: {table[0]}\nHTML: {table[1]}"
+                break
+            retrieved_text += table_text
+
         response_message = self.chain.invoke({"context":retrieved_text,"question": user_message,"history":history})
         if(len(self.image_data)>0):
-            response_message =  response_message
+            response_message = f"""<img src="{self.image_data[0]}" alt="Retrieved Image"></br>""" + response_message
         self.agentTools.answerUser(response_message,user_message)
         response_actions = self.agentTools.returnActions()
 
         return response_actions,response_message
     
-    def chat(self,conversation_id,user_message):
+    def chat(self,conversation_id,user_message,pdfname):
         conversations = self.fileHandler.load_conversations()
         for conversation in conversations:
             if conversation['id'] == conversation_id:
+                print("[INFO] query:",user_message)
                 history = conversation["messages"]
-                response_actions,response_message = self.GetResponse(user_message,history)
+                response_actions,response_message = self.GetResponse(user_message,history,pdfname=pdfname)
                 self.updateConversation(conversation,user_message,response_message)
                 self.save_conversations(conversations)
                 response = {
-                    'actions': response_actions,
-                    'numImages':len(self.image_data)
+                    'actions': response_actions
                 }
                 return jsonify(response)
         
@@ -135,13 +144,13 @@ class chatHandlerClass:
         conversation['messages'].append({'sender': 'user', 'text': userMessage})
         conversation['messages'].append({'sender': 'bot', 'text': responseMessage})
 
-    def upload_audio(self,file,conversation_id):
+    def upload_audio(self,file,conversation_id,pdfname):
         conversations = self.load_conversations()
         for conversation in conversations:
             if conversation['id'] == conversation_id:
                 filepath = self.fileHandler.saveFile(file)
                 user_message = self.transcriber(filepath)
-                response_actions,response_message = self.GetResponse(user_message)
+                response_actions,response_message = self.GetResponse(user_message,pdfname)
                 self.chat(conversation['id'],user_message)
                 self.updateConversation(conversation,user_message,response_message)
                 self.fileHandler.save_conversations(conversations)
@@ -248,11 +257,7 @@ class chatHandlerClass:
         if num>=len(self.image_data):
             return None
         return self.image_data[num]
+
     
-    def getImageHTML(self,num):
-        if num>=len(self.image_data):
-            return None
-        return f"""<img src="{self.image_data[0]}" alt="Retrieved Image"></br>"""
-    
-    def queryImage(self,base64Img):
-        return self.RAG.getDataFromBase64Image(base64Img)
+    def queryImage(self,base64Img,pdfName):
+        return self.RAG.getDataFromImage(base64Img,pdfName)

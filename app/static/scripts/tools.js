@@ -1,4 +1,4 @@
-const parseActions = (data, imageText = null) => {
+const parseActions = (data) => {
     console.log(data);
     const actions = data.actions;
 
@@ -12,9 +12,6 @@ const parseActions = (data, imageText = null) => {
         }
         if(key === "addMessage"){
             let response = value['response']
-            if(imageText != null){
-                response = imageText + response
-            }
             addmessage(value['input'],response)
         }
         if(key === "display"){
@@ -34,6 +31,12 @@ const parseActions = (data, imageText = null) => {
 //         imageContainer.appendChild(img);
 //     });
 // }
+
+const getPDFName = ()=>{
+    const pdfSelect = document.getElementById('element-select');
+    const pdfName = pdfSelect.value
+    return pdfName
+}
 
 const addmessage = (userMessage, reply, audioPath = null) => {
     if(userMessage !== ''){

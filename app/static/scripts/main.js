@@ -54,41 +54,28 @@ const loadConversation = (conversationId) => {
 const sendMessage = () => {
     const messageInput = document.getElementById('message-input');
     const message = messageInput.value;
+    const pdfSelect = document.getElementById('element-select');
+    const pdfName = pdfSelect.value
     console.log("sending message")
     if (message.trim() && currentConversationId !== null) {
         fetch('/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message, conversation_id: currentConversationId })
+            body: JSON.stringify({ message:message,pdfName:pdfName, conversation_id: currentConversationId })
         })
         .then(response => response.json())
         .then(async(data)=> {
             if (data.error) {
                 console.error(data.error);
             } else {
-                if(data.numImages>0){
-                    var imageText = await getimage()
-                    parseActions(data,imageText);
-                }
-                else{
                     parseActions(data);
-                }
                 messageInput.value = ''
             }
         });
     }
 };
 
-const getimage = async () => {
-    const response = await fetch('/getImage', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    });
-    const data = await response.text();
-    return data;
-}
+
 
 
 const newChat = () => {

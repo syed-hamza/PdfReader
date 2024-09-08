@@ -2,6 +2,9 @@ from flask import Flask, request, jsonify, render_template, Response
 import sys 
 import os
 import base64
+from io import BytesIO
+from PIL import Image
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'Libraries/VideoGen')))
 
 from Libraries.chathandler import chatHandlerClass
@@ -37,11 +40,10 @@ def get_conversations():
 def chat():
     user_message = request.json.get('message')
     conversation_id = request.json.get('conversation_id')
-    return chatHandler.chat(conversation_id,user_message)
+    pdfName = request.json.get('pdfName')
+    print(f"[INFO] PDF name = {pdfName}")
+    return chatHandler.chat(conversation_id,user_message,pdfName)
 
-@app.route('/getImage', methods=['POST'])
-def getImage():
-    return chatHandler.getImageHTML(0)
 
 @app.route('/new_chat', methods=['POST'])
 def new_chat():
@@ -146,10 +148,10 @@ def serve_audio():
     pdfName =  request.args.get('pdfName')
     return chatHandler.getAudio(pdfName)
 
+
 @app.route('/upload-image', methods=['POST'])
 def upload_image():
-    from io import BytesIO
-    from PIL import Image
+    pdfName =  request.args.get('pdfName')
     if 'image' not in request.files:
         return jsonify({'success': False, 'error': 'No image part in the request'}), 400
 
@@ -157,18 +159,23 @@ def upload_image():
     if file.filename == '':
         return jsonify({'success': False, 'error': 'No selected file'}), 400
 
-    # try:
-    image = Image.open(file.stream)
-    buffered = BytesIO()
-    image.save(buffered, format="PNG")
-    img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
-    data = chatHandler.queryImage(img_str)
-    return jsonify({'success': True, 'data': data, 'base64': img_str}), 200   
-    # except Exception as e:
-    #     return jsonify({'success': False, 'error': str(e)}), 500
+    try:
+        image = Image.open(file.stream)
+
+        buffered = BytesIO()
+        image.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+        data = chatHandler.queryImage(image,pdfName)
+
+        return jsonify({'success': True, 'data': data, 'base64': img_str}), 200
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 # if __name__ == '__main__':
 #     app.run(ssl_context=('cert.pem', 'key.pem'),debug=True,use_reloader=False, host="0.0.0.0")
 
 if __name__ == '__main__':
-    app.run(debug=True,use_reloader=False, host="0.0.0.0",port='6969')
+    app.run(debug=True,use_reloader=False, host="0.0.0.0",port='5001')

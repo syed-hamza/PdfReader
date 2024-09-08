@@ -1,8 +1,9 @@
 async function uploadImage(file) {
     const formData = new FormData();
+    pdfName = getPDFName()
     formData.append('image', file);
 
-    const response = await fetch('/upload-image', {
+    const response = await fetch(`/upload-image?pdfName=${pdfName}`, {
         method: 'POST',
         body: formData
     });
@@ -11,11 +12,13 @@ async function uploadImage(file) {
     if (data.success) {
         const imgElement = document.createElement('img');
         imgElement.src = `data:image/png;base64,${data.base64}`;
-        console.log(data.data)
         document.getElementById('messages').appendChild(imgElement);
+        addmessage("",data.data)
     } else {
         alert('Image upload failed.');
     }
+
+ 
 }
 
 function setupDropArea(dropid = 'messages'){
