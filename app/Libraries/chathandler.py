@@ -212,14 +212,14 @@ class chatHandlerClass:
     
     def summarizePDFOllama(self,pdfName,conversation_id):
         savedsum = self.fileHandler.loadJSON(pdfName,"lecture")
-        if(savedsum !=[]):
-            lecture = self.texthandler(savedsum)
-            self.updateConversation(conversation,"Summary",lecture)
-            self.save_conversations(conversations)
-            return lecture
         conversations = self.load_conversations()
         for conversation in conversations:
             if conversation['id'] == conversation_id:
+                if(savedsum !=[]):
+                    lecture = self.texthandler(savedsum)
+                    self.updateConversation(conversation,"Summary",lecture)
+                    self.save_conversations(conversations)
+                    return lecture
                 print("[INFO]: Generating content")
                 pdfPath = os.path.join(self.fileHandler.pdfPath,pdfName)
                 
