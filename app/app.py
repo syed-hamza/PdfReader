@@ -160,19 +160,19 @@ def upload_image():
     if file.filename == '':
         return jsonify({'success': False, 'error': 'No selected file'}), 400
 
-    try:
-        image = Image.open(file.stream)
+    # try:
+    image = Image.open(file.stream)
 
-        buffered = BytesIO()
-        image.save(buffered, format="PNG")
-        img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+    buffered = BytesIO()
+    image.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
-        data = chatHandler.queryImage(image,pdfName)
+    data = chatHandler.queryImage(image,pdfName)
 
-        return jsonify({'success': True, 'data': data, 'base64': img_str}), 200
+    return jsonify({'success': True, 'data': data, 'base64': img_str}), 200
 
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+    # except Exception as e:
+    #     return jsonify({'success': False, 'error': str(e)}), 500
 
 
 # if __name__ == '__main__':

@@ -184,3 +184,18 @@ function showprogress(message, type = "normal") {
         }, 10);
     }
   }
+  function showLoadingWidget(loadingID,textID) {
+    console.log("showLoadingWidget")
+    document.getElementById(loadingID).style.display = 'block';
+    if(textID != null){
+      document.getElementById(textID).style.display = 'none';
+    }
+  }
+  
+  function hideLoadingWidget(loadingID,textID) {
+    console.log("hideLoadingWidget")
+    document.getElementById(loadingID).style.display = 'none';
+    if(textID != null){
+      document.getElementById(textID).style.display = 'block';
+    }
+  }

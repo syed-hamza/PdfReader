@@ -51,11 +51,12 @@ const loadConversation = (conversationId) => {
         });
 };
 
-const sendMessage = () => {
+const sendMessage = async () => {
     const messageInput = document.getElementById('message-input');
     const message = messageInput.value;
     const pdfSelect = document.getElementById('element-select');
     const pdfName = pdfSelect.value
+    showLoadingWidget("sendMessageLoader","MessageText")
     console.log("sending message")
     if (message.trim() && currentConversationId !== null) {
         fetch('/chat', {
@@ -71,6 +72,7 @@ const sendMessage = () => {
                     parseActions(data);
                 messageInput.value = ''
             }
+            hideLoadingWidget("sendMessageLoader","MessageText");
         });
     }
 };
