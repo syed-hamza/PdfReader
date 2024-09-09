@@ -250,7 +250,7 @@ async function summarize(){
         return;
     }
     document.getElementById('loader').style.display = 'inline-block';
-    await fetch(`/getSummary?filename=${pdfname}`)
+    await fetch(`/getSummary?filename=${pdfname}&conversationID=${currentConversationId}`)
         .then(response => response.text())
         .then(
             response => addmessage('',response)

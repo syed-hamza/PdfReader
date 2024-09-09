@@ -51,6 +51,7 @@ class RAGHandler:
     def createCollection(self,pdfName):
         colName = f"{pdfName}_{self.collectionName}"
         imgColName = f"{pdfName}_{self.imageCollectionName}"
+        self.collections = self.qdrant_client.get_collections()
         if colName not in [c.name for c in self.collections.collections]:
             self.qdrant_client.create_collection(
                 collection_name=colName,
@@ -191,19 +192,22 @@ class RAGHandler:
         doc_id = str(uuid.uuid4())
         if(seperateText != None):
             text = seperateText
-        self.qdrant_client.upsert(
-            collection_name=collectionName,
-            points=[models.PointStruct(
-                id=doc_id,
-                vector=vector,
-                payload={
-                    "image_path": imagePath,
-                    "text": text,
-                    "table":table,
-                    "type" : contentType
-                }
-            )]
-        )
+        try:
+            self.qdrant_client.upsert(
+                collection_name=collectionName,
+                points=[models.PointStruct(
+                    id=doc_id,
+                    vector=vector,
+                    payload={
+                        "image_path": imagePath,
+                        "text": text,
+                        "table":table,
+                        "type" : contentType
+                    }
+                )]
+            )
+        except:
+            print("[INFO]: Failed to upsert:",text)
 
     def indexpdf(self, pdfPath):
         pdfBaseName = Path(pdfPath).stem

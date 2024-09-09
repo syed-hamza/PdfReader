@@ -107,6 +107,8 @@ class chatHandlerClass:
         response_message = self.chain.invoke({"context":retrieved_text,"question": user_message,"history":history})
         if(len(self.image_data)>0):
             response_message = f"""<img src="{self.image_data[0]}" alt="Retrieved Image"></br>""" + response_message
+        response_message.replace("```html","")
+        response_message.replace("```","")
         self.agentTools.answerUser(response_message,user_message)
         response_actions = self.agentTools.returnActions()
 
@@ -143,6 +145,8 @@ class chatHandlerClass:
     def updateConversation(self,conversation,userMessage,responseMessage):
         conversation['messages'].append({'sender': 'user', 'text': userMessage})
         conversation['messages'].append({'sender': 'bot', 'text': responseMessage})
+        print(f"[INFO] updated conversation for query:{userMessage} for id:{conversation['id']}")
+        print(f"conv lenght = {len(conversation['messages'])}")
 
     def upload_audio(self,file,conversation_id,pdfname):
         conversations = self.load_conversations()
@@ -206,24 +210,27 @@ class chatHandlerClass:
     #     print("lecture:",lecture)
     #     return lecture
     
-    def summarizePDFOllama(self,pdfName):
+    def summarizePDFOllama(self,pdfName,conversation_id):
         savedsum = self.fileHandler.loadJSON(pdfName,"lecture")
         # if(savedsum !=[]):
         #     lecture = self.texthandler(savedsum)
         #     return lecture
-
-        print("[INFO]: Generating content")
-        pdfPath = os.path.join(self.fileHandler.pdfPath,pdfName)
-        
-
-
-        retrieval_results = self.RAG.getAllPdfText(pdfName)
-        lecture = self.lectureChain.invoke({"paper":retrieval_results})
-        self.fileHandler.updateJSON(pdfName,"lecture",lecture)     
-        audioPath = self.audioGenerator.textToAudio(lecture,pdfName)
-        lecture = self.texthandler(lecture)
-        # self.updateConversation(self,conversation,userMessage,responseMessage)
-        return lecture
+        conversations = self.load_conversations()
+        for conversation in conversations:
+            if conversation['id'] == conversation_id:
+                print("[INFO]: Generating content")
+                pdfPath = os.path.join(self.fileHandler.pdfPath,pdfName)
+                
+                retrieval_results = self.RAG.getAllPdfText(pdfName)
+                print("[INFO] Summary context",retrieval_results[:100])
+                lecture = self.lectureChain.invoke({"paper":retrieval_results})
+                self.fileHandler.updateJSON(pdfName,"lecture",lecture)     
+                audioPath = self.audioGenerator.textToAudio(lecture,pdfName)
+                lecture = self.texthandler(lecture)
+                self.updateConversation(conversation,"Summary",lecture)
+                self.save_conversations(conversations)
+                return lecture
+        return jsonify({'error': 'Conversation not found'}), 404
     
     def texthandler(self,text):
         paragraphs = [para.strip() for para in text.split('\n') if para.strip()]
