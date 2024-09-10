@@ -13,6 +13,12 @@ import torch
 from transformers import CLIPProcessor, CLIPModel
 import shutil
 from langchain_ollama import OllamaEmbeddings
+from langchain_qdrant import QdrantVectorStore
+from langchain.chains import RetrievalQA
+from langchain_ollama.llms import OllamaLLM
+from langchain.agents import AgentType, Tool, initialize_agent
+from langchain_core.documents import Document
+from uuid import uuid4
 
 
 class RAGHandler:
@@ -40,16 +46,61 @@ class RAGHandler:
         self.imageOnlyCollectionName = "pdfImageData"
         self.collections = self.qdrant_client.get_collections()
         
+        self.retreivers = {}
+        self.vectorStores = {}
         self.limit = 10
         self.pdfData = {}
+        
+        self.model = OllamaLLM(base_url= "http://ollama:11434", model="phi3-128k:latest")
 
-    def createCollection(self, name, collections, size = 1024):
+    def createCollection(self, name, collections, size = 1024, embeddings = None, retreiver = True):
+        if(embeddings == None):
+            embeddings = self.embeddings
         if name not in collections:
             self.qdrant_client.create_collection(
                 collection_name=name,
                 vectors_config=VectorParams(size=size, distance=Distance.COSINE)
             )
+            if retreiver:
+                self.vectorStores[name] = QdrantVectorStore(
+                        client=self.qdrant_client,
+                        collection_name=name,
+                        embedding=embeddings,
+                )
+                self.retreivers[name] = RetrievalQA.from_chain_type(
+                    llm=self.model, chain_type="stuff", retriever=self.vectorStores[name].as_retriever()
+                )
 
+    def getTools(self,pdfName):
+        if(pdfName.endswith(".pdf")):
+            pdfName = Path(pdfName).stem
+        colName = f"{pdfName}_{self.collectionName}"
+        colTableName = f"{pdfName}_{self.collectionTableName}"
+        colImageName = f"{pdfName}_{self.collectionImageName}"
+        print("Invoking:")
+        # print("[INFO] Retreiver test",self.retreivers[colName].invoke("Attention"))
+        tools = [
+            Tool(
+                name="Research Paper Texts",
+                func=self.retreivers[colName].invoke,
+                description="Useful for when you need to answer questions about the paper in text. Input should be a Specific Keywords.",
+                return_direct=True,
+            ),
+            Tool(
+                name="Research Paper Tables",
+                func=self.retreivers[colTableName].invoke,
+                description="useful for when you need to get tables present in the paper. Input should be a Table number or table description.",
+                return_direct=True,
+            ),
+            Tool(
+                name="Research Paper Image Paths",
+                func=self.retreivers[colImageName].invoke,
+                description="useful for when you need to retreive images from the paper. Input should be a the Figure number or figure description.",
+                return_direct=True,
+            ),            
+        ]
+        return tools
+        
     def createCollections(self,pdfName):
         colName = f"{pdfName}_{self.collectionName}"
         colTableName = f"{pdfName}_{self.collectionTableName}"
@@ -60,7 +111,7 @@ class RAGHandler:
         self.createCollection(colName,collectionNames)
         self.createCollection(colTableName,collectionNames)
         self.createCollection(colImageName,collectionNames)
-        self.createCollection(imgColName,collectionNames, size = 512)
+        self.createCollection(imgColName,collectionNames, size = 512,retreiver= False)
 
         return colName,colTableName,colImageName,imgColName
     
@@ -134,26 +185,33 @@ class RAGHandler:
         ind2 = PDFText[ind:].find("\n")
         return PDFText[ind:ind+ind2],match
     
-    def pushImgContextAndPath(self, path, PDFText,colName):
-        presc_img_path = path
-        for filename in os.listdir(presc_img_path):
-            img_path = os.path.join(presc_img_path, filename)
-            data,imgNum = self.getFigureData(PDFText,filename)
-            if(data != -1):
-                print(f"[INFO] Pushing  {data}:{img_path}")
-                payload = {"text":data,"imagePath": img_path}
-                self.pushToStore(text = data, payload = payload,collectionName = colName) #self, text, imagePath=None, table="None",contentType = "Default"
-                payload = {"text":f"Figure {imgNum}","imagePath": img_path}
-                self.pushToStore(text = f"Figure {imgNum}", payload = payload,collectionName = colName)
-
-
     def convert_to_base64(self, pil_image):
         buffered = BytesIO()
         pil_image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
         return img_str
+    
+    def pushImgContextAndPath(self, path, PDFText,colName):
+        presc_img_path = path
+        docs = []
+        for filename in os.listdir(presc_img_path):
+            img_path = os.path.join(presc_img_path, filename)
+            data,imgNum = self.getFigureData(PDFText,filename)
+            if(data != -1):
+                print(f"[INFO] Pushing  {data}:{img_path}")
+                docs.append(Document(
+                            page_content=img_path,
+                            metadata={"Figure Context": data},
+                        ))
+        uuids = [str(uuid4()) for _ in range(len(docs))]
+        self.vectorStores[colName].add_documents(documents=docs, ids=uuids)   
+        self.retreivers[colName] = RetrievalQA.from_chain_type(
+            llm=self.model, chain_type="stuff", retriever=self.vectorStores[colName].as_retriever()
+        )            
+            
 
     def pushTable(self,raw_pdf_elements,colName):
+        docs = []
         for i in range(len(raw_pdf_elements)):
             if(raw_pdf_elements[i].category =="Table"):
                 if(i>=len(raw_pdf_elements)-1):
@@ -163,25 +221,46 @@ class RAGHandler:
                     continue
                 for text in texts:
                     if("Table" in text):
-                        payload = {"text":text,"table": raw_pdf_elements[i].metadata.text_as_html}
-                        self.pushToStore(text=text,payload = payload,collectionName = colName)
+                        docs.append(Document(
+                            page_content=raw_pdf_elements[i].metadata.text_as_html,
+                            metadata={"Context": text},
+                        ))
+
                         pattern = r"Table (\d+):"
                         matches = re.findall(pattern, text)
 
                         if(len(matches)>0):
                             num = matches[0]
-                            payload = {"text":text,"table": raw_pdf_elements[i].metadata.text_as_html}
-                            self.pushToStore(text = f"Table {num}",payload = payload,collectionName = colName)
-                        break
+                            docs.append(Document(
+                                page_content=raw_pdf_elements[i].metadata.text_as_html,
+                                metadata={"Context": f"Table {num}"},
+                            ))
 
+                        break
+        uuids = [str(uuid4()) for _ in range(len(docs))]
+        self.vectorStores[colName].add_documents(documents=docs, ids=uuids)
+        self.retreivers[colName] = RetrievalQA.from_chain_type(
+            llm=self.model, chain_type="stuff", retriever=self.vectorStores[colName].as_retriever()
+        )                     
+        
+
+        
+    
     def pushTextToStore(self,raw_pdf_elements,colName):
+        docs = []
         for i in range(len(raw_pdf_elements)):
             if(raw_pdf_elements[i].category =="CompositeElement"):
                 if(len(raw_pdf_elements[i].text)>5):
-                    payload = {
-                        "text": raw_pdf_elements[i].text,
-                    }
-                    self.pushToStore(text=raw_pdf_elements[i].text,collectionName = colName,payload = payload)
+
+                    docs.append(Document(
+                        page_content=raw_pdf_elements[i].text,
+                        metadata={"source": "Reseach Paper"},
+                    ))
+        uuids = [str(uuid4()) for _ in range(len(docs))]
+        self.vectorStores[colName].add_documents(documents=docs, ids=uuids)
+        self.retreivers[colName] = RetrievalQA.from_chain_type(
+            llm=self.model, chain_type="stuff", retriever=self.vectorStores[colName].as_retriever()
+        )         
     
     def pushToStore(self, text,collectionName,payload, seperateText= None):
         text = text.strip()
@@ -257,13 +336,13 @@ class RAGHandler:
         tables = []
         text = []
         for result in textResults:
-            text.append(result.payload['text'])
+            text.append(result)
         for result in tableResults:
-            tables.append(result.payload['table']) 
-            text.append(result.payload['text'])
+            tables.append(result) 
+            text.append(result)
         for result in imageResults:
-            images.append(result.payload['imagePath'])
-            text.append(result.payload['text'])
+            images.append(result)
+            text.append(result)
         strtext = "./".join(text)
 
         return {"text": strtext, "images": images,"tables":tables}

@@ -42,7 +42,7 @@ def chat():
     conversation_id = request.json.get('conversation_id')
     pdfName = request.json.get('pdfName')
     print(f"[INFO] PDF name = {pdfName}")
-    return chatHandler.chat(conversation_id,user_message,pdfName)
+    return chatHandler.chat(conversation_id,user_message,pdfName,agent = False)
 
 
 @app.route('/new_chat', methods=['POST'])
