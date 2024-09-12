@@ -13,4 +13,5 @@ app/test/*
 app/Libraries/VideoGen/gfpgan/*
 app/Libraries/VideoGen/checkpoints/*
 app/qdrant_local_storage/
-app/Libraries/__pycache__/
+app/uploads/
+app/Libraries/__pycache__/*

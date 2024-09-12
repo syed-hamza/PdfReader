@@ -10,8 +10,9 @@ import PyPDF2
 from Libraries.transcriber import whisperTranscriber
 # from Libraries.graphAgentIndexing import agent
 from Libraries.fileHandler import handler
-from Libraries.RAG.qdrantRAGHandler_CLIP_Image import RAGHandler
+# from Libraries.RAG.qdrantRAGHandler_CLIP_Image import RAGHandler
 # from Libraries.RAG.qdrantRAGHandler_CLIP_Image_Retreiver import RAGHandler
+from Libraries.RAG.ChromaRAGHandler import RAGHandler
 from Libraries.audioGenerator import gttsconverter
 from Libraries.langchainWebTools import agentTools
 from langchain_ollama.llms import OllamaLLM

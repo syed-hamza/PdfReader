@@ -29,3 +29,5 @@ chromadb
 ollama
 PyPDF2
 pypdf
+open_clip_torch
+chromadb
