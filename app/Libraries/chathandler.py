@@ -10,15 +10,16 @@ import PyPDF2
 from Libraries.transcriber import whisperTranscriber
 # from Libraries.graphAgentIndexing import agent
 from Libraries.fileHandler import handler
-# from Libraries.RAG.qdrantRAGHandler_CLIP_Image import RAGHandler
+from Libraries.RAG.qdrantRAGHandler_CLIP_Image2 import RAGHandler
 # from Libraries.RAG.qdrantRAGHandler_CLIP_Image_Retreiver import RAGHandler
-from Libraries.RAG.ChromaRAGHandler import RAGHandler
+# from Libraries.RAG.ChromaRAGHandler import RAGHandler
 from Libraries.audioGenerator import gttsconverter
 from Libraries.langchainWebTools import agentTools
 from langchain_ollama.llms import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.agents import AgentType, Tool, initialize_agent
-from langchain.agents import AgentExecutor, create_react_agent
+from langchain.agents import AgentExecutor, create_react_agent  
+from langchain_core.prompts.prompt import PromptTemplate
 
 # file_path = './static/secretKey.json'
 # try:
@@ -42,18 +43,30 @@ class chatHandlerClass:
         self.model = OllamaLLM(base_url= "http://ollama:11434", model="phi3-128k:latest")
         # self.model = OllamaLLM(base_url= "http://ollama:11434", model="internlm2_5-20b:latest")
         template = """
-            You are a senior researcher tasked with answering the following question: {question}. Your response should be based solely on the provided context and any relevant parts of the conversation history. Do not use any outside knowledge or assumptions and do not say if you have a context or history in your response.
+            You are a senior researcher answering the following question: {question}
 
-            Given the context provided: {context}, and the relevant conversation history: {history}, please construct a valid and specific answer. Make sure the answer is well supported and accurate. If the context does not contain sufficient information, list any topics or questions that require further research.
+            Base your response only on the provided context and relevant conversation history. Do not use outside knowledge or make assumptions. Do not mention having context or history in your response.
 
-            Ensure that you:
+            Context: {context}
+            Relevant conversation history: {history}
 
-            1. Avoid adding notes, disclaimers, or assumptions not supported by the context.
-            2. Be very specific about the answer.
-            3. Add supporting tabular data if present in the context only in HTML formal provided to you.
+            Construct a specific, well-supported answer. 
 
-            Your goal is to deliver a comprehensive and contextually accurate answer.
-        """
+            Tables(may or may not be given):
+            {tables}
+
+            Images(may or may not be given):
+            {images}
+
+            Guidelines:
+            1. Use only information from the context.
+            2. Be very specific in your answer.
+            3. Include supporting tabular data from the context in HTML format if available, do not create your own only give the table provided to you.
+            4. display the image in HTML format using the image path as str.
+            5. Do no provide any nores or disclaimers.
+            Your task is to provide a comprehensive, contextually accurate answer.
+            """
+        
         
 
         prompt = ChatPromptTemplate.from_template(template)
@@ -99,98 +112,94 @@ class chatHandlerClass:
     def GetResponse(self,user_message,history = '',pdfname = ''):    
         retrieved_text = self.RAG.query(user_message,pdfname)
         if(isinstance(retrieved_text,dict)):
-            self.image_data = retrieved_text["images"]
-            self.table_Data = retrieved_text["tables"]
-            print("[INFO] Number of tables:",len(self.table_Data))
-            print("[INFO] Images:",self.image_data)
+            image_data = retrieved_text["images"]
+            table_Data = retrieved_text["tables"]
+            print("[INFO] Number of tables:",len(table_Data))
+            print("[INFO] Images:",len(image_data))
             retrieved_text = retrieved_text["text"]
-            table_text = '\n here are the retrieved tables with their context, show the html format if needed to support your answer:'
-            for n,table in enumerate(self.table_Data):
-                table_text += f"\n{n}: Context: {table[0]}\nHTML: {table[1]}"
-                break
-            retrieved_text += table_text
 
-        response_message = self.chain.invoke({"context":retrieved_text,"question": user_message,"history":history})
+        print("[INFO] retreived text",retrieved_text)
+
+        response_message = self.chain.invoke({"context":retrieved_text,"question": user_message,"history":history,"tables":table_Data, "images":image_data})
         if(len(self.image_data)>0):
             response_message = f"""<img src="{self.image_data[0]}" alt="Retrieved Image"></br>""" + response_message
-        response_message.replace("```html","")
-        response_message.replace("```","")
+        response_message = response_message.replace("```html","")
+        response_message = response_message.replace("```","")
         self.agentTools.answerUser(response_message,user_message)
         response_actions = self.agentTools.returnActions()
 
         return response_actions,response_message
     
-    def GetAgentResponse(self,user_message,history = '',pdfname = ''):  
-        from langchain_core.prompts.prompt import PromptTemplate
-        tools = self.RAG.getTools(pdfname)
+    # def GetAgentResponse(self,user_message,history = '',pdfname = ''):
+    #     tools = self.RAG.getTools(pdfname)
 
-        # agentTemplate = f"""
-        #     You are a senior researcher tasked with answering the following question: {user_message}. Your response should be based solely on the provided context and any relevant parts of the conversation history. Do not use any outside knowledge or assumptions and do not say if you have a context or history in your response.
-        #     The relevant conversation history: {history}, please construct a valid and specific answer. Make sure the answer is well supported and accurate. If the context does not contain sufficient information, list any topics or questions that require further research.
+    #     # agentTemplate = f"""
+    #     #     You are a senior researcher tasked with answering the following question: {user_message}. Your response should be based solely on the provided context and any relevant parts of the conversation history. Do not use any outside knowledge or assumptions and do not say if you have a context or history in your response.
+    #     #     The relevant conversation history: {history}, please construct a valid and specific answer. Make sure the answer is well supported and accurate. If the context does not contain sufficient information, list any topics or questions that require further research.
 
-        #     Ensure that you:
+    #     #     Ensure that you:
 
-        #     1. Avoid adding notes, disclaimers, or assumptions not supported by the context.
-        #     2. Be very specific about the answer.
-        #     3. Add supporting tabular data if present in the context only in HTML formal provided to you.
+    #     #     1. Avoid adding notes, disclaimers, or assumptions not supported by the context.
+    #     #     2. Be very specific about the answer.
+    #     #     3. Add supporting tabular data if present in the context only in HTML formal provided to you.
 
-        #     Your goal is to deliver a comprehensive and contextually accurate answer.
+    #     #     Your goal is to deliver a comprehensive and contextually accurate answer.
             
-        # """
-        # format = "Output should be in the following JSON format:{'text':'Your answer', 'images':[list of image paths], 'tables':[list of relevant table codes]}"
-        # agentTemplate+=format
+    #     # """
+    #     # format = "Output should be in the following JSON format:{'text':'Your answer', 'images':[list of image paths], 'tables':[list of relevant table codes]}"
+    #     # agentTemplate+=format
         
         
-        # agent = initialize_agent(
-        #     tools, self.model, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=True
-        # )
-        # response = agent.invoke(agentTemplate)
+    #     # agent = initialize_agent(
+    #     #     tools, self.model, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=True
+    #     # )
+    #     # response = agent.invoke(agentTemplate)
         
 
-        agentTemplate = """Answer the following questions as best you can. You have access to the following tools:
+    #     agentTemplate = """Answer the following questions as best you can. You have access to the following tools:
 
-                {tools}
+    #             {tools}
 
-                Use the following format:
+    #             Use the following format:
 
-                Question: the input question you must answer
+    #             Question: the input question you must answer
 
-                Thought: you should always think about what to do
+    #             Thought: you should always think about what to do
 
-                Action: the action to take, should be one of [{tool_names}]
+    #             Action: the action to take, should be one of [{tool_names}]
 
-                Action Input: the input to the action
+    #             Action Input: the input to the action
 
-                Observation: the result of the action
+    #             Observation: the result of the action
 
-                ... (this Thought/Action/Action Input/Observation can repeat N times)
+    #             ... (this Thought/Action/Action Input/Observation can repeat N times)
 
-                Thought: I now know the final answer
+    #             Thought: I now know the final answer
 
-                Final Answer: the final answer to the original input question
+    #             Final Answer: the final answer to the original input question
 
-                Begin!
+    #             Begin!
 
-                Question: {input}
+    #             Question: {input}
 
-                Thought:{agent_scratchpad}"""
-        prompt = PromptTemplate(
-            input_variables=["tools", "tool_names","input","agent_scratchpad"], template=agentTemplate
-        )
-        agent = create_react_agent(self.model, tools, prompt)
-        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-        toolNames = ["Research Paper Texts","Research Paper Tables","Research Paper Image Paths"]
-        response = agent_executor.invoke(
-            {"input": agentTemplate,"tools":tools,"agent_scratchpad":"","tool_names":toolNames}
-        )
+    #             Thought:{agent_scratchpad}"""
+    #     prompt = PromptTemplate(
+    #         input_variables=["tools", "tool_names","input","agent_scratchpad"], template=agentTemplate
+    #     )
+    #     agent = create_react_agent(self.model, tools, prompt)
+    #     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+    #     toolNames = ["Research Paper Texts","Research Paper Tables","Research Paper Image Paths"]
+    #     response = agent_executor.invoke(
+    #         {"input": agentTemplate,"tools":tools,"agent_scratchpad":"","tool_names":toolNames}
+    #     )
 
-        print("[INFO] response",response)
-        response = response['output']['result']
-        #website stuff
-        self.agentTools.answerUser(response,user_message)
-        response_actions = self.agentTools.returnActions()
+    #     print("[INFO] response",response)
+    #     response = response['output']['result']
+    #     #website stuff
+    #     self.agentTools.answerUser(response,user_message)
+    #     response_actions = self.agentTools.returnActions()
 
-        return response_actions,response
+    #     return response_actions,response
 
     def chat(self,conversation_id,user_message,pdfname, agent = True):
         conversations = self.fileHandler.load_conversations()
