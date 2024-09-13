@@ -73,6 +73,7 @@ The model llama3.1 (70B) is deployed in the system using the following command:
 ```bash       
 $ ollama run llama3.1:70b
 ```
+However, user can deploy various other LLMs which are availible throught ollama for example: internLM-20b or Phi3.5.
 
 ### Installing Whisper (medium size)
 For installing the Speech-to-Text model Whisper model in ROCm6.1 we followed the instructions [ROCm Whisper]( https://rocm.blogs.amd.com/artificial-intelligence/whisper/README.html)
@@ -98,15 +99,17 @@ For installing the Speech-to-Text model Whisper model in ROCm6.1 we followed the
    http://127.1.1.0:5000
 
 ### Installing through Docker
-IntelliPaper build can be done through Docker using the command
-    ```bash
-    $ docker build -t pdfr .
+IntelliPaper build can be done through Docker using the command \
     ```
+    $ docker build -t pdfr .
+    ``` 
+    
 The docker build command will create a container with PyTorch, Optimum-AMD, and IntelliApp code. 
-The command to run the container is
-    ``` bash
+The command to run the container is  \
+    ``` 
     $ docker run -p 5000:5000 --network="host" -it pdfr
     ```
+    
 ## IntelliPaper User guide
 IntelliPaper dashboard has three panels:
 1) Left side panel is uploading a research paper,
