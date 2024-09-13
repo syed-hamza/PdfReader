@@ -50,21 +50,23 @@ class chatHandlerClass:
             Context: {context}
             Relevant conversation history: {history}
 
-            Construct a specific, well-supported answer. 
+            Construct a specific, well-supported answer.
 
-            Tables(may or may not be given):
+            Tables (may or may not be given):
             {tables}
 
-            Images(may or may not be given):
+            Images (may or may not be given):
             {images}
 
             Guidelines:
             1. Use only information from the context.
             2. Be very specific in your answer.
-            3. Include supporting tabular data from the context in HTML format if available, do not create your own only give the table provided to you.
-            4. display the image in HTML format using the image path as str.
-            5. Do no provide any nores or disclaimers.
+            3. Include supporting tabular data from the context in HTML format if available, do not create your own, only give the table provided to you.
+            4. When displaying images, use only the image path in the `<img>` tag's `src` attribute. The image path should **only** appear inside the `src` attribute of the HTML tag and nowhere else. Do not reveal the location of the image.
+             Example: <img src="Path of the image"></img>
+            5. Do not provide any notes or disclaimers.
             Your task is to provide a comprehensive, contextually accurate answer.
+
             """
         
         

@@ -214,10 +214,10 @@ class RAGHandler:
             extract_images_in_pdf=True,
             infer_table_structure=True,
             chunking_strategy="by_title",
-            max_characters=1000,
-            new_after_n_chars=600,
-            combine_text_under_n_chars=400,
-            overlap = 100,
+            max_characters=256,
+            new_after_n_chars=200,
+            combine_text_under_n_chars=128,
+            overlap = 64,
             image_output_dir_path=imageDir,
             extract_image_block_output_dir=imageDir
         )

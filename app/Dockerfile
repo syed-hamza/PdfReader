@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y \
 # Set the working directory in the container
 
 RUN pip install --upgrade pip
+RUN apt-get install -y poppler-utils pkg-config 
+RUN apt-get install -y libleptonica-dev tesseract-ocr libtesseract-dev python3-pil tesseract-ocr-eng 
+RUN pip install "unstructured[all-docs]"
 RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.1
 RUN pip install --upgrade-strategy eager optimum[amd]
 

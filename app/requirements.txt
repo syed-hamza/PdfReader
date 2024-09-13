@@ -22,12 +22,16 @@ safetensors==0.4.4
 werkzeug==3.0.3
 numpy==1.23.4
 huggingface-hub==0.24.5
-langgraph==0.2.4
+# langgraph
 langchain_chroma
 sentence-transformers
 chromadb
 ollama
 PyPDF2
 pypdf
-open_clip_torch
-chromadb
+qdrant_client
+pytesseract
+tesseract
+# tesseract-ocr
+# open_clip_torch
+# chromadb
