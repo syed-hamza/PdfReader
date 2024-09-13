@@ -99,12 +99,14 @@ For installing the Speech-to-Text model Whisper model in ROCm6.1 we followed the
 
 ### Installing through Docker
 IntelliPaper build can be done through Docker using the command
-$ docker build -t pdfr .
-
+    ```bash
+    $ docker build -t pdfr .
+    ```
 The docker build command will create a container with PyTorch, Optimum-AMD, and IntelliApp code. 
 The command to run the container is
-$ docker run -p 5000:5000 --network="host" -it pdfr
-
+    ``` bash
+    $ docker run -p 5000:5000 --network="host" -it pdfr
+    ```
 ## IntelliPaper User guide
 IntelliPaper dashboard has three panels:
 1) Left side panel is uploading a research paper,
