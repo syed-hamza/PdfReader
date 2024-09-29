@@ -10,9 +10,8 @@ import PyPDF2
 from Libraries.transcriber import whisperTranscriber
 # from Libraries.graphAgentIndexing import agent
 from Libraries.fileHandler import handler
-from Libraries.RAG.qdrantRAGHandler_CLIP_Image2 import RAGHandler
-# from Libraries.RAG.qdrantRAGHandler_CLIP_Image_Retreiver import RAGHandler
-# from Libraries.RAG.ChromaRAGHandler import RAGHandler
+# from Libraries.RAG.qdrantRAGHandler_CLIP_ImageOllama import RAGHandler
+from Libraries.RAG.qdrantRAGHandler_CLIP_Image import RAGHandler
 from Libraries.audioGenerator import gttsconverter
 from Libraries.langchainWebTools import agentTools
 from langchain_ollama.llms import OllamaLLM
@@ -36,11 +35,11 @@ from langchain_core.prompts.prompt import PromptTemplate
 class chatHandlerClass:
     def __init__(self,tools =["arxiv"]):
         self.tools = tools
-        self.RAG = RAGHandler()
+        self.model = OllamaLLM(base_url= "http://ollama:11434", model="phi3:medium-128k")
+        self.RAG = RAGHandler(self.model)
         self.transcriber = whisperTranscriber()
         self.fileHandler = handler(self.RAG)
         self.image_data =[]
-        self.model = OllamaLLM(base_url= "http://ollama:11434", model="phi3-128k:latest")
         # self.model = OllamaLLM(base_url= "http://ollama:11434", model="internlm2_5-20b:latest")
         template = """
             You are a senior researcher answering the following question: {question}

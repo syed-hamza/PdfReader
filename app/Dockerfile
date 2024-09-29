@@ -27,7 +27,8 @@ COPY requirements.txt .
 
 # Install the required packages
 RUN pip install -r requirements.txt
-
+RUN ollama pull snowflake-arctic-embed
+RUN ollama pull phi3:medium-128k
 
 COPY . /app
 EXPOSE 5000

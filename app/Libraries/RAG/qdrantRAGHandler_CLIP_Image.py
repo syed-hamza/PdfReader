@@ -16,7 +16,8 @@ from langchain_ollama import OllamaEmbeddings
 
 
 class RAGHandler:
-    def __init__(self):
+    def __init__(self,model):
+        self.model = model
         self.output_dir = "./static/Retrievedimages/"
         self.pdfDir = './papers/'
         
@@ -98,9 +99,9 @@ class RAGHandler:
         for filename in os.listdir(presc_img_path):
             img_path = os.path.join(presc_img_path, filename)
             pil_image = Image.open(img_path)
-            # image_b64= self.PILImagePreprocess(pil_image)
+            image_b64= self.PILImagePreprocess(pil_image)
             data,imgNum = self.getFigureData(PDFText,filename)
-            vector = self.get_clip_embedding(image=pil_image)
+            vector = self.get_clip_embedding(image=image_b64)
             doc_id = str(uuid.uuid4())
 
             self.qdrant_client.upsert(
@@ -117,7 +118,7 @@ class RAGHandler:
     
     
     def getDataFromImage(self, image,pdfName):
-        imagePIL = self.PILImagePreprocess(image)
+        imagePIL = self.convert_to_base64(image)
         data = self.getClientResult(imagePIL,collection = self.imageOnlyCollectionName,pdfName = pdfName, Embedding=self.get_clip_embedding)
         text = []
         for result in data:
@@ -125,6 +126,15 @@ class RAGHandler:
         return text[0]
         
         
+    # def getFigureData(self,PDFText,filename):
+    #     pattern = r'-\d+-(\d+)\.jpg'
+    #     match = re.search(pattern, filename).group(1)
+    #     ind = PDFText.find(f"Figure {match}:")
+    #     if(ind==-1):
+    #         return -1,-1
+    #     ind2 = PDFText[ind:].find("\n")
+    #     return PDFText[ind:ind+ind2],match
+
     def getFigureData(self,PDFText,filename):
         pattern = r'-\d+-(\d+)\.jpg'
         match = re.search(pattern, filename).group(1)
@@ -138,17 +148,18 @@ class RAGHandler:
         presc_img_path = path
         for filename in os.listdir(presc_img_path):
             img_path = os.path.join(presc_img_path, filename)
+            img = Image.open(img_path)
+            img_b64 = self.convert_to_base64(img)
             data,imgNum = self.getFigureData(PDFText,filename)
             if(data != -1):
                 print(f"[INFO] Pushing  {data}:{img_path}")
-                payload = {"text":data,"imagePath": img_path}
-                self.pushToStore(text = data, payload = payload,collectionName = colName) #self, text, imagePath=None, table="None",contentType = "Default"
-                payload = {"text":f"Figure {imgNum}","imagePath": img_path}
-                self.pushToStore(text = f"Figure {imgNum}", payload = payload,collectionName = colName)
+                payload = {"text":data,"imagePath": img_path,'imagebase64':img_b64}
+                self.pushToStore(text = data, payload = payload,collectionName = colName)
 
 
     def convert_to_base64(self, pil_image):
         buffered = BytesIO()
+        pil_image = self.PILImagePreprocess(pil_image)
         pil_image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
         return img_str
@@ -211,10 +222,10 @@ class RAGHandler:
             extract_images_in_pdf=True,
             infer_table_structure=True,
             chunking_strategy="by_title",
-            max_characters=1000,
-            new_after_n_chars=600,
-            combine_text_under_n_chars=400,
-            overlap = 100,
+            max_characters=256,
+            new_after_n_chars=200,
+            combine_text_under_n_chars=128,
+            overlap = 64,
             image_output_dir_path=imageDir,
             extract_image_block_output_dir=imageDir
         )
@@ -259,11 +270,11 @@ class RAGHandler:
         for result in textResults:
             text.append(result.payload['text'])
         for result in tableResults:
-            tables.append(result.payload['table']) 
-            text.append(result.payload['text'])
+            tables.append([result.payload['text'],result.payload['table']]) 
+            # text.append(result.payload['text'])
         for result in imageResults:
-            images.append(result.payload['imagePath'])
-            text.append(result.payload['text'])
+            images.append([result.payload['text'],result.payload['imagePath']])
+            # text.append(result.payload['text'])
         strtext = "./".join(text)
 
         return {"text": strtext, "images": images,"tables":tables}

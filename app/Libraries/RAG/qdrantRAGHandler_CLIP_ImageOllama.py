@@ -13,10 +13,15 @@ import torch
 from transformers import CLIPProcessor, CLIPModel
 import shutil
 from langchain_ollama import OllamaEmbeddings
+from langchain_core.prompts import ChatPromptTemplate
+from langchain.agents import AgentType, Tool, initialize_agent
+from langchain.agents import AgentExecutor, create_react_agent  
+from langchain_core.prompts.prompt import PromptTemplate
 
 
 class RAGHandler:
-    def __init__(self):
+    def __init__(self,model):
+        self.model = model
         self.output_dir = "./static/Retrievedimages/"
         self.pdfDir = './papers/'
         
@@ -26,8 +31,6 @@ class RAGHandler:
         self.embeddings = OllamaEmbeddings(
             model="snowflake-arctic-embed",
         )
-                
-        # Use a local directory for Qdrant storage
         self.qdrant_path = "./qdrant_local_storage"
         if(os.path.exists(self.qdrant_path)):
             shutil.rmtree(self.qdrant_path)
@@ -42,6 +45,16 @@ class RAGHandler:
         
         self.limit = 10
         self.pdfData = {}
+        template = """
+            You are a senior researcher And you have to get image descriptions for {numImage} scattered around the given context:
+            Context: {context}
+            retreive given information for the images accurately and return it in a python list.
+            example: ["Figure 1:context of figure 1"]
+            """
+
+        prompt = ChatPromptTemplate.from_template(template)
+        self.chain = prompt | self.model
+
 
     def createCollection(self, name, collections, size = 1024):
         if name not in collections:
@@ -123,30 +136,27 @@ class RAGHandler:
         for result in data:
                 text.append(result.payload['text'])
         return text[0]
+
+    def getFigureData(self,PDFText,numfiles):
+        response_message = self.chain.invoke({"context":PDFText,"numImage": numfiles})
+        if response_message.startswith("```python"):
+            response_message = response_message[9:-3]
+        return eval(response_message)
         
-        
-    def getFigureData(self,PDFText,filename):
-        pattern = r'-\d+-(\d+)\.jpg'
-        match = re.search(pattern, filename).group(1)
-        ind = PDFText.find(f"Figure {match}:")
-        if(ind==-1):
-            return -1,-1
-        ind2 = PDFText[ind:].find("\n")
-        return PDFText[ind:ind+ind2],match
     
     def pushImgContextAndPath(self, path, PDFText,colName):
         presc_img_path = path
-        for filename in os.listdir(presc_img_path):
+        numfiles = len(os.listdir(presc_img_path))
+        deflist = self.getFigureData(PDFText,numfiles)
+        print("[INFO]: image data",deflist)
+        for n,filename in enumerate(os.listdir(presc_img_path)):
             img_path = os.path.join(presc_img_path, filename)
             img = Image.open(img_path)
             img_b64 = self.convert_to_base64(img)
-            data,imgNum = self.getFigureData(PDFText,filename)
-            if(data != -1):
-                print(f"[INFO] Pushing  {data}:{img_path}")
-                payload = {"text":data,"imagePath": img_path,'imagebase64':img_b64}
-                self.pushToStore(text = data, payload = payload,collectionName = colName) #self, text, imagePath=None, table="None",contentType = "Default"
-                # payload = {"text":f"Figure {imgNum}","imagePath": img_path,'imagebase64':img_b64}
-                # self.pushToStore(text = f"Figure {imgNum}", payload = payload,collectionName = colName)
+            if n<len(deflist):
+                print(f"[INFO] Pushing  {deflist[n]}:{img_path}")
+                payload = {"text":deflist[n],"imagePath": img_path,'imagebase64':img_b64}
+                self.pushToStore(text = deflist[n], payload = payload,collectionName = colName)
 
 
     def convert_to_base64(self, pil_image):
