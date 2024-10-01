@@ -1,11 +1,14 @@
 ## IntelliPaper: Virtual Assistant for Research Papers
 
+![Question 1](images/Question1.png)
+
+
 Quickly gain deep understanding on any subject. Manage thousands of research papers effortlessly with our advanced Q&A
 
 IntelliPaper streamlines the process of exploring academic papers, allowing you to quickly grasp essential insights and gain a deep understanding of any subject. Manage and access thousands of papers effortlessly with our advanced voice enabled Q&A chatbot interface. It integrates seamlessly advanced LLMs on-premise, leveraging the power of AMD Radeon W7900 GPUs to deliver fast, accurate, and insightful responses. The tool also generates an audio podcast of the summary of the current research paper in the display. Revolutionize your research experience with IntelliPaper where efficiency meets depth.
 
 ## Installation
-To install IntelliPaper we rquire a machine with minimum of 128GB of RAM and an AMD GPU Radeon PRO W7900. This machine need to be installed with many Generative AI libraries and a verson of flash-attention package suitable for the AMD GPU Radeon PRO W7900. The following sub-sections presents the steps to install the necessary python packages: 
+To install IntelliPaper we require a machine with minimum of 128GB of RAM and an AMD GPU Radeon PRO W7900. This machine need to be installed with many Generative AI libraries and a verson of flash-attention package suitable for the AMD GPU Radeon PRO W7900. The following sub-sections presents the steps to install the necessary python packages: 
 
 ### Install PyTorch for ROCm 6.1 or 6.2
 Create a fresh conda environment with minimal libraries: Python3.10(or higher), matplotlib, JupeterLab
