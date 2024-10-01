@@ -13,7 +13,7 @@ import torch
 from transformers import CLIPProcessor, CLIPModel
 import shutil
 from langchain_ollama import OllamaEmbeddings
-
+import ollama
 
 class RAGHandler:
     def __init__(self,model):
@@ -24,6 +24,7 @@ class RAGHandler:
         # Initialize CLIP model and processor
         self.clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
         self.clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+    
         self.embeddings = OllamaEmbeddings(
             model="snowflake-arctic-embed",
         )

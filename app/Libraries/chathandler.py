@@ -35,7 +35,9 @@ from langchain_core.prompts.prompt import PromptTemplate
 class chatHandlerClass:
     def __init__(self,tools =["arxiv"]):
         self.tools = tools
-        self.model = OllamaLLM(base_url= "http://ollama:11434", model="phi3:medium-128k")
+        self.model = OllamaLLM(
+            base_url= "http://ollama:11434", 
+            model="phi3:medium-128k")
         self.RAG = RAGHandler(self.model)
         self.transcriber = whisperTranscriber()
         self.fileHandler = handler(self.RAG)
@@ -58,11 +60,11 @@ class chatHandlerClass:
             {images}
 
             Guidelines:
-            1. Use only information from the context.
+            1. Use only information from the context, do not reveal any information about the context or history in your response.
             2. Be very specific in your answer.
             3. Include supporting tabular data from the context in HTML format if available, do not create your own, only give the table provided to you.
             4. When displaying images, use only the image path in the `<img>` tag's `src` attribute. The image path should **only** appear inside the `src` attribute of the HTML tag and nowhere else. Do not reveal the location of the image.
-             Example: <img src="Path of the image"></img>
+             Example: <img src="Path of the image"></img>. Make sure you display the image if given in context.
             5. Do not provide any notes or disclaimers.
             Your task is to provide a comprehensive, contextually accurate answer.
 
@@ -122,8 +124,8 @@ class chatHandlerClass:
         print("[INFO] retreived text",retrieved_text)
 
         response_message = self.chain.invoke({"context":retrieved_text,"question": user_message,"history":history,"tables":table_Data, "images":image_data})
-        if(len(self.image_data)>0):
-            response_message = f"""<img src="{self.image_data[0]}" alt="Retrieved Image"></br>""" + response_message
+        # if(len(self.image_data)>0):
+        #     response_message = f"""<img src="{self.image_data[0]}" alt="Retrieved Image"></br>""" + response_message
         response_message = response_message.replace("```html","")
         response_message = response_message.replace("```","")
         self.agentTools.answerUser(response_message,user_message)
