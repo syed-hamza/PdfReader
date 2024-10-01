@@ -2,7 +2,8 @@ FROM python:3.10
 
 
 RUN curl https://ollama.ai/install.sh | sh
-
+#RUN ollama -v
+#RUN ollama run snowflake-arctic-embed
 
 WORKDIR /app
 

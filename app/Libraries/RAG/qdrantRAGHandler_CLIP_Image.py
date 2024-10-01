@@ -24,7 +24,7 @@ class RAGHandler:
         # Initialize CLIP model and processor
         self.clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
         self.clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-    
+        # ollama.pull("snowflake-arctic-embed")
         self.embeddings = OllamaEmbeddings(
             model="snowflake-arctic-embed",
         )
