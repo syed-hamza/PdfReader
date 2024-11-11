@@ -10,11 +10,11 @@ IntelliPaper streamlines the process of exploring academic papers, allowing you 
 ## Installation
 To install IntelliPaper we require a machine with minimum of 128GB of RAM and an AMD GPU Radeon PRO W7900. This machine need to be installed with many Generative AI libraries and a verson of flash-attention package suitable for the AMD GPU Radeon PRO W7900. The following sub-sections presents the steps to install the necessary python packages: 
 
-### Install PyTorch for ROCm 6.1 or 6.2
-Create a fresh conda environment with minimal libraries: Python3.10(or higher), matplotlib, JupeterLab
-After the conda enironment is created the next step is to install the PyTorch Libary for ROCm from the [PyTorch portal](https://pytorch.org/). The pip command to install the latest PyTorch library for ROCm6.2.1 is available from pytorch nightly build:
+### Install PyTorch for 6.2
+Create a fresh conda environment with minimal libraries: Python3.10(or higher Python3.11 ), matplotlib, JupeterLab
+After the conda enironment is created the next step is to install the PyTorch Libary for ROCm from the [PyTorch portal](https://pytorch.org/). The pip command to install the latest PyTorch library for ROCm6.2.4 is:
 ```bash
-pip3 install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/rocm6.2
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.2
 ```
 Details of pytorch installation can be found from the command:
 ```bash
