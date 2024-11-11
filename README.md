@@ -30,8 +30,8 @@ export ROCM_VERSION=6.2
 export GPU_TARGETS=gfx11
 export HIP_VISIBLE_DEVICES=0
 export TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL=1
-export ROCM_PATH=/opt/rocm-6.2.1
-export PATH=$PATH:/opt/rocm-6.2.1/bin
+export ROCM_PATH=/opt/rocm-6.2.4
+export PATH=$PATH:/opt/rocm-6.2.4/bin
 ```
 
 ### Install Optimum-AMD for accessing Hugggingface Libraries
