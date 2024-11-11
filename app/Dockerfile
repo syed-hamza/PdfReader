@@ -1,7 +1,7 @@
 FROM python:3.10
 
 
-RUN curl https://ollama.ai/install.sh | sh
+#RUN curl https://ollama.ai/install.sh | sh
 #RUN ollama -v
 #RUN ollama run snowflake-arctic-embed
 
@@ -18,7 +18,7 @@ RUN pip install --upgrade pip
 RUN apt-get install -y poppler-utils pkg-config 
 RUN apt-get install -y libleptonica-dev tesseract-ocr libtesseract-dev python3-pil tesseract-ocr-eng 
 RUN pip install "unstructured[all-docs]"
-RUN pip3 install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/rocm6.2 
+RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.2
 RUN pip install --upgrade-strategy eager optimum[amd]
 
 
